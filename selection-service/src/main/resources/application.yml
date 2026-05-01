@@ -1,46 +1,52 @@
 spring:
   application:
     name: selection-service
+  # datasource
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   # redis
   data:
     redis:
-      host: ${REDIS_HOST:192.168.152.131}
-      port: ${REDIS_PORT:6379}
-      username: ${REDIS_USERNAME:}
-      password: ${REDIS_PASSWORD:}
-      database: ${REDIS_DATABASE:1}
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      username: ${REDIS_USERNAME}
+      password: ${REDIS_PASSWORD}
+      database: ${REDIS_DATABASE}
       timeout: 3000ms
       lettuce:
         pool:
-          max-active: 20
-          max-idle: 10
+          max-active: 50
+          max-idle: 20
           min-idle: 5
-          max-wait: 100ms
+          max-wait: 1000ms
           time-between-eviction-runs: 3000ms
   # kafka
   kafka:
-    bootstrap-servers: ${KAFKA_HOST:192.168.152.131}:${KAFKA_PORT:9092}
+    bootstrap-servers: ${KAFKA_HOST}:${KAFKA_PORT}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
       retries: 3
-      acks: 1
+      acks: -1
     consumer:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      group-id: ${KAFKA_GROUP_ID:selection-consumer-group}
+      group-id: ${KAFKA_GROUP_ID}
       auto-offset-reset: earliest
       enable-auto-commit: false
     listener:
       ack-mode: manual
 
-server:
-  port: ${SERVER_PORT:8081}
+server: 
+  port: ${SELECTION_SERVICE_PORT}
 
 
 basic-service:
-  url: ${BASIC_SERVICE_URL:http://localhost:8080}
+  url: ${BASIC_SERVICE_URL}
 
 logging:
   level:
-    com.octopuz.selectionservice: ${LOG_LEVEL:DEBUG}
+    com.octopuz.selectionservice: ${LOG_LEVEL:INFO}

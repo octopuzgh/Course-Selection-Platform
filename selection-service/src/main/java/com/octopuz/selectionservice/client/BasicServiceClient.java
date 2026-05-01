@@ -41,20 +41,6 @@ public class BasicServiceClient {
     }
 
     /**
-     * 写入选课记录
-     */
-    public boolean saveSelectionRecord(String studentNo, String courseNo) {
-        try {
-            String url = basicServiceUrl + "/selections";
-            String body = "{\"studentNo\":\"" + studentNo + "\",\"courseNo\":\"" + courseNo + "\"}";
-            restTemplate.postForObject(url, body, String.class);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    /**
      * 检查学生是否已选该课程
      */
     public boolean hasSelectedCourse(String studentNo, String courseNo) {

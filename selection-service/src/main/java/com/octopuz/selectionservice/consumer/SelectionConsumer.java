@@ -1,39 +1,47 @@
 package com.octopuz.selectionservice.consumer;
 
-import com.alibaba.fastjson.JSON;
-import com.octopuz.selectionservice.client.BasicServiceClient;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
+
+import com.alibaba.fastjson.JSON;
+import com.octopuz.selectionservice.entity.SelectionRecord;
+import com.octopuz.selectionservice.mapper.SelectionRecordMapper;
+
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class SelectionConsumer {
 
-    private final BasicServiceClient basicServiceClient;
+    @Autowired
+    private SelectionRecordMapper selectionRecordMapper;
 
-    public SelectionConsumer(BasicServiceClient basicServiceClient) {
-        this.basicServiceClient = basicServiceClient;
-    }
-
-    @KafkaListener(topics = "selection_topic", groupId = "selection-consumer-group")
-    public void consume(String message) {
+    @KafkaListener(topics = "selection-topic", groupId = "${KAFKA_GROUP_ID}")
+    public void consume(@Payload String message, Acknowledgment ack) {
         log.debug("收到选课消息: {}", message);
         try {
             SelectionMessage msg = JSON.parseObject(message, SelectionMessage.class);
 
-            boolean success = basicServiceClient.saveSelectionRecord(msg.getStudentNo(), msg.getCourseNo());
+            SelectionRecord record = SelectionRecord.builder()
+                    .studentNo(msg.getStudentNo())
+                    .courseNo(msg.getCourseNo())
+                    .build();
 
-            if (success) {
-                log.info("选课记录写入成功: 学生{} 课程{}", msg.getStudentNo(), msg.getCourseNo());
-            } else {
-                log.error("选课记录写入失败: 学生{} 课程{}", msg.getStudentNo(), msg.getCourseNo());
-            }
+            selectionRecordMapper.insert(record);
+
+            log.info("选课记录写入成功: 学生{} 课程{}", msg.getStudentNo(), msg.getCourseNo());
+            ack.acknowledge();
         } catch (Exception e) {
-            log.error("处理选课消息失败", e);
+            log.error("处理选课消息失败: {}", message, e);
         }
     }
+
     @Data
     private static class SelectionMessage {
         private String studentNo;

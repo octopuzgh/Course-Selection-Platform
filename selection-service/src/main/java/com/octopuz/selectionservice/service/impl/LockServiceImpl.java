@@ -46,17 +46,4 @@ public class LockServiceImpl implements LockService {
             lockMap.remove(lockKey);
         }
     }
-
-    @Override
-    public void lock(String lockKey, long leaseTime, TimeUnit timeUnit) {
-        RLock lock = redissonClient.getLock(lockKey);
-        lockMap.put(lockKey, lock);
-        lock.lock(leaseTime, timeUnit);
-    }
-
-    @Override
-    public boolean isLocked(String lockKey) {
-        RLock lock = lockMap.get(lockKey);
-        return lock != null && lock.isLocked();
-    }
 }

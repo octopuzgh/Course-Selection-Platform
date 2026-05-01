@@ -1,5 +1,6 @@
 package com.octopuz.selectionservice.service.impl;
 
+import com.octopuz.selectionservice.annotation.LogSelection;
 import com.octopuz.selectionservice.client.BasicServiceClient;
 import com.octopuz.selectionservice.dto.RankingItem;
 import com.octopuz.selectionservice.dto.SelectionRequest;
@@ -34,6 +35,7 @@ public class SelectionServiceImpl implements SelectionService {
 
     private static final String LOCK_KEY_PREFIX = "lock:selection:";
 
+    @LogSelection(action = "SELECT")
     @Override
     public SelectionResponse selectCourse(SelectionRequest request) {
         String studentNo = request.getStudentNo();
