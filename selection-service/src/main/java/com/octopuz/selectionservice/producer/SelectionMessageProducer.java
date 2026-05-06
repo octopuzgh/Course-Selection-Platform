@@ -20,8 +20,16 @@ public class SelectionMessageProducer {
     private static final String SELECTION_TOPIC = "selection_topic";
 
     public void sendSelectionMessage(String studentNo, String courseNo) {
+        sendMessage(studentNo, courseNo, "SELECT");
+    }
+
+    public void sendDropMessage(String studentNo, String courseNo) {
+        sendMessage(studentNo, courseNo, "DROP");
+    }
+
+    private void sendMessage(String studentNo, String courseNo, String type) {
         try {
-            SelectionMessage message = new SelectionMessage(studentNo, courseNo);
+            SelectionMessage message = new SelectionMessage(studentNo, courseNo, type);
             String json = JSON.toJSONString(message);
             kafkaTemplate.send(SELECTION_TOPIC, json);
             log.debug("发送选课消息到Kafka: {}", json);
@@ -35,5 +43,6 @@ public class SelectionMessageProducer {
     private static class SelectionMessage {
         private String studentNo;
         private String courseNo;
+        private String type;
     }
 }

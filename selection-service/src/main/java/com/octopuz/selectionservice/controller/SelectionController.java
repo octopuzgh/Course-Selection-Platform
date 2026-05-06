@@ -25,6 +25,12 @@ public class SelectionController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/drop")
+    public ResponseEntity<SelectionResponse> dropCourse(@RequestBody SelectionRequest request) {
+        SelectionResponse response = selectionService.dropCourse(request);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/ranking")
     public ResponseEntity<List<RankingItem>> getAllCourses(
             @RequestParam(defaultValue = "1") Integer page,

@@ -35,6 +35,12 @@ public class RankingServiceImpl implements RankingService {
     }
 
     @Override
+    public void restoreRanking(String courseNo) {
+        redisTemplate.opsForZSet().incrementScore(RANKING_KEY, courseNo, 1);
+        log.debug("课程{}排行榜恢复，剩余数量+1", courseNo);
+    }
+
+    @Override
     public void initCourseRanking(String courseNo, Integer remaining) {
         redisTemplate.opsForZSet().add(RANKING_KEY, courseNo, remaining.doubleValue());
         log.debug("课程{}排行榜初始化，剩余: {}", courseNo, remaining);

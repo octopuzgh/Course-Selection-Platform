@@ -75,6 +75,39 @@ public class SelectionServiceImpl implements SelectionService {
         }
     }
 
+    @LogSelection(action = "DROP")
+    @Override
+    public SelectionResponse dropCourse(SelectionRequest request) {
+        String studentNo = request.getStudentNo();
+        String courseNo = request.getCourseNo();
+
+        if (!validateStudentAndCourse(studentNo, courseNo)) {
+            return SelectionResponse.fail("学生或课程不存在");
+        }
+
+        if (!selectedRecordService.isSelected(studentNo, courseNo)) {
+            return SelectionResponse.fail("您未选该课程");
+        }
+
+        String lockKey = LOCK_KEY_PREFIX + courseNo;
+        try {
+            if (!lockService.tryLock(lockKey, 5, 10, TimeUnit.SECONDS)) {
+                return SelectionResponse.fail("系统繁忙，请稍后重试");
+            }
+
+            stockService.restoreStock(courseNo);
+            selectedRecordService.unmarkSelected(studentNo, courseNo);
+            rankingService.restoreRanking(courseNo);
+            messageProducer.sendDropMessage(studentNo, courseNo);
+
+            log.info("学生{}成功退课{}", studentNo, courseNo);
+            return SelectionResponse.success(generateSelectionId());
+
+        } finally {
+            lockService.unlock(lockKey);
+        }
+    }
+
     @Override
     public List<RankingItem> getAllCourses(Integer page, Integer size) {
         return rankingService.getAllCourses(page, size);

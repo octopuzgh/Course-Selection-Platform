@@ -16,6 +16,12 @@ public interface RankingService {
     void updateRanking(String courseNo);
 
     /**
+     * 恢复排行榜（退课时调用，剩余数量+1）
+     * @param courseNo 课程号
+     */
+    void restoreRanking(String courseNo);
+
+    /**
      * 初始化课程排行榜
      * @param courseNo 课程号
      * @param remaining 剩余数量

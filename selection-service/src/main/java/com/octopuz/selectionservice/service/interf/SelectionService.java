@@ -16,6 +16,13 @@ public interface SelectionService {
     SelectionResponse selectCourse(SelectionRequest request);
 
     /**
+     * 退课
+     * @param request 退课请求
+     * @return 退课结果
+     */
+    SelectionResponse dropCourse(SelectionRequest request);
+
+    /**
      * 分页获取所有课程排行
      * @param page 页码
      * @param size 每页数量
