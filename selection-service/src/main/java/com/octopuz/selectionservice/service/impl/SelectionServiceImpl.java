@@ -10,6 +10,7 @@ import com.octopuz.selectionservice.service.interf.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -32,6 +33,8 @@ public class SelectionServiceImpl implements SelectionService {
     private SelectionMessageProducer messageProducer;
     @Autowired
     private BasicServiceClient basicServiceClient;
+    @Autowired
+    private StringRedisTemplate redisTemplate;
 
     private static final String LOCK_KEY_PREFIX = "lock:selection:";
 
@@ -67,6 +70,10 @@ public class SelectionServiceImpl implements SelectionService {
             rankingService.updateRanking(courseNo);
             messageProducer.sendSelectionMessage(studentNo, courseNo);
 
+            redisTemplate.opsForValue().increment("stats:total");
+            redisTemplate.opsForValue().increment("stats:today:count");
+            redisTemplate.opsForSet().add("stats:today:students", studentNo);
+
             log.info("学生{}成功选课{}", studentNo, courseNo);
             return SelectionResponse.success(generateSelectionId());
 
@@ -99,6 +106,10 @@ public class SelectionServiceImpl implements SelectionService {
             selectedRecordService.unmarkSelected(studentNo, courseNo);
             rankingService.restoreRanking(courseNo);
             messageProducer.sendDropMessage(studentNo, courseNo);
+
+            redisTemplate.opsForValue().decrement("stats:total");
+            redisTemplate.opsForValue().decrement("stats:today:count");
+            redisTemplate.opsForSet().remove("stats:today:students", studentNo);
 
             log.info("学生{}成功退课{}", studentNo, courseNo);
             return SelectionResponse.success(generateSelectionId());
