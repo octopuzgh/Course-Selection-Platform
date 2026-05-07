@@ -1,4 +1,4 @@
-package com.octopuz.statisticsapi.scheduler;
+package com.octopuz.statisticsservice.scheduler;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

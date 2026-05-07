@@ -1,8 +1,8 @@
-package com.octopuz.statisticsapi.controller;
+package com.octopuz.statisticsservice.controller;
 
-import com.octopuz.statisticsapi.dto.RankingItem;
-import com.octopuz.statisticsapi.dto.TodayStats;
-import com.octopuz.statisticsapi.service.RealTimeStatsService;
+import com.octopuz.statisticsservice.dto.RankingItem;
+import com.octopuz.statisticsservice.dto.TodayStats;
+import com.octopuz.statisticsservice.service.RealTimeStatsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

@@ -1,4 +1,4 @@
-package com.octopuz.statisticsapi.dto;
+package com.octopuz.statisticsservice.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

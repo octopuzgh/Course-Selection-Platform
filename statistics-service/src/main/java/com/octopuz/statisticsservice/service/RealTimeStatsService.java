@@ -1,7 +1,7 @@
-package com.octopuz.statisticsapi.service;
+package com.octopuz.statisticsservice.service;
 
-import com.octopuz.statisticsapi.dto.RankingItem;
-import com.octopuz.statisticsapi.dto.TodayStats;
+import com.octopuz.statisticsservice.dto.RankingItem;
+import com.octopuz.statisticsservice.dto.TodayStats;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
