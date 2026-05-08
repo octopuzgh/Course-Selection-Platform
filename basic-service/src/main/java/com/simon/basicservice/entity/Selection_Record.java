@@ -6,9 +6,11 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
-@TableName("student")
-public class Student {
+@TableName("selection_record")
+public class Selection_Record {
 
     @TableId(type = IdType.AUTO)
     private Long id;
@@ -16,9 +18,10 @@ public class Student {
     @TableField("student_no")
     private String studentNo;
 
-    private String name;
+    @TableField("course_no")
+    private String courseNo;
 
-    private String major;
+    @TableField("select_time")
+    private LocalDateTime selectTime;
 
-    private Integer grade;
 }
