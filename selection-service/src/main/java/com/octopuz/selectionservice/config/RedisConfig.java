@@ -16,17 +16,20 @@ public class RedisConfig {
     @Value("${spring.data.redis.port}")
     private int redisPort;
 
-    @Value("${spring.data.redis.username:}")
+    @Value("${spring.data.redis.username}")
     private String username;
 
-    @Value("${spring.data.redis.password:}")
+    @Value("${spring.data.redis.password}")
     private String password;
 
+    @Value("${spring.data.redis.database}")
+    private int database;
     @Bean
     public RedissonClient redissonClient() {
         Config config = new Config();
         config.useSingleServer()
-                .setAddress("redis://" + redisHost + ":" + redisPort);
+                .setAddress("redis://" + redisHost + ":" + redisPort)
+                .setDatabase(database);
 
         if (username != null && !username.isEmpty()) {
             config.useSingleServer().setUsername(username);
