@@ -1,0 +1,19 @@
+# Kafka Configuration
+kafka:
+  bootstrap-servers: ${KAFKA_HOST:192.168.152.131}:${KAFKA_PORT:9092}
+  topic: selection-topic
+  group-id: stats-consumer-group
+
+# Redis Configuration
+redis:
+  host: ${REDIS_HOST:192.168.152.131}
+  port: ${REDIS_PORT:6379}
+  database: ${REDIS_DATABASE:1}
+  password: ${REDIS_PASSWORD:Octopuz@123}
+
+# Spark Configuration
+spark:
+  master: spark://192.168.152.131:7077
+  app-name: RealtimeSelectionStats
+  driver-memory: 512m
+  executor-memory: 1g

@@ -43,6 +43,9 @@ spring:
 server: 
   port: ${SELECTION_SERVICE_PORT}
 
+# dotenv configuration
+dotenv:
+  path: ../../../../.env
 
 basic-service:
   url: ${BASIC_SERVICE_URL}
