@@ -140,6 +140,6 @@ public class SelectionServiceImpl implements SelectionService {
     }
 
     private Long generateSelectionId() {
-        return System.currentTimeMillis() + (long) (Math.random() * 1000);
+        return redisTemplate.opsForValue().increment("global:selection:id");
     }
 }
