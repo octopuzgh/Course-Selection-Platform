@@ -17,6 +17,9 @@ object StreamingStatsApplication {
   val DAILY_COUNT_KEY = "stats:daily:count"
   val DAILY_STUDENTS_KEY = "stats:daily:students"
   val COURSE_POPULARITY_KEY_PREFIX = "course:popularity:"
+  val STATS_TOTAL_KEY = "stats:total"
+  val STATS_TODAY_COUNT_KEY = "stats:today:count"
+  val STATS_TODAY_STUDENTS_KEY = "stats:today:students"
 
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder
@@ -78,11 +81,19 @@ object StreamingStatsApplication {
             jedis.zincrby(COURSE_POPULARITY_KEY_PREFIX + today, 1, msg.courseNo)
             jedis.expire(COURSE_POPULARITY_KEY_PREFIX + today, 172800)
 
+            jedis.incr(STATS_TOTAL_KEY)
+            jedis.incr(STATS_TODAY_COUNT_KEY)
+            jedis.sadd(STATS_TODAY_STUDENTS_KEY, msg.studentNo)
+
           } else if (msg.`type` == "DROP") {
             jedis.decr(dailyCountKey)
             jedis.srem(dailyStudentsKey, msg.studentNo)
 
             jedis.zincrby(COURSE_POPULARITY_KEY_PREFIX + today, -1, msg.courseNo)
+
+            jedis.decr(STATS_TOTAL_KEY)
+            jedis.decr(STATS_TODAY_COUNT_KEY)
+            jedis.srem(STATS_TODAY_STUDENTS_KEY, msg.studentNo)
           }
         }
 

@@ -1,21 +1,25 @@
 package com.octopuz.selectionservice.service.impl;
 
-import com.octopuz.selectionservice.annotation.LogSelection;
-import com.octopuz.selectionservice.client.BasicServiceClient;
-import com.octopuz.selectionservice.dto.RankingItem;
-import com.octopuz.selectionservice.dto.SelectionRequest;
-import com.octopuz.selectionservice.dto.SelectionResponse;
-import com.octopuz.selectionservice.exception.BusinessException;
-import com.octopuz.selectionservice.producer.SelectionMessageProducer;
-import com.octopuz.selectionservice.service.interf.*;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import com.octopuz.selectionservice.annotation.LogSelection;
+import com.octopuz.selectionservice.client.BasicServiceClient;
+import com.octopuz.selectionservice.dto.SelectionRequest;
+import com.octopuz.selectionservice.dto.SelectionResponse;
+import com.octopuz.selectionservice.exception.BusinessException;
+import com.octopuz.selectionservice.producer.SelectionMessageProducer;
+import com.octopuz.selectionservice.service.interf.LockService;
+import com.octopuz.selectionservice.service.interf.RankingService;
+import com.octopuz.selectionservice.service.interf.SelectedRecordService;
+import com.octopuz.selectionservice.service.interf.SelectionService;
+import com.octopuz.selectionservice.service.interf.StockService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -118,11 +122,6 @@ public class SelectionServiceImpl implements SelectionService {
                 lockService.unlock(lockKey);
             }
         }
-    }
-
-    @Override
-    public List<RankingItem> getAllCourses(Integer page, Integer size) {
-        return rankingService.getAllCourses(page, size);
     }
 
     private boolean validateStudentAndCourse(String studentNo, String courseNo) {
