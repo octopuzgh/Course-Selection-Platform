@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import count, countDistinct, to_date, date_format
+from pyspark.sql.functions import count, countDistinct, to_date, date_format, col
 
 from config import (
     MYSQL_HOST, MYSQL_PORT, MYSQL_DB, MYSQL_USER, MYSQL_PASSWORD,
@@ -29,28 +29,37 @@ def main():
         .format("jdbc") \
         .option("url", JDBC_URL) \
         .options(**JDBC_PROPS) \
-        .option("dbtable", "selection_record") \
+        .option("dbtable", "selection_log") \
         .load()
 
-    df.createOrReplaceTempView("selection_record")
+    df.createOrReplaceTempView("selection_log")
 
     daily_stats = spark.sql("""
         SELECT
-            DATE(select_time) AS stat_date,
-            COUNT(DISTINCT student_no) AS daily_students,
-            COUNT(*) AS daily_selections,
+            DATE(operate_time) AS stat_date,
+            COUNT(DISTINCT CASE WHEN action = 'SELECT' THEN student_no END) AS daily_students,
+            COUNT(CASE WHEN action = 'SELECT' THEN 1 END) AS select_count,
+            COUNT(CASE WHEN action = 'DROP' THEN 1 END) AS drop_count,
             COUNT(DISTINCT course_no) AS daily_courses
-        FROM selection_record
-        GROUP BY DATE(select_time)
+        FROM selection_log
+        GROUP BY DATE(operate_time)
         ORDER BY stat_date DESC
     """)
 
     daily_stats = daily_stats.withColumn(
-        "stat_date", 
+        "daily_selections",
+        col("select_count") - col("drop_count")
+    )
+
+    daily_stats = daily_stats.withColumn(
+        "stat_date",
         date_format(daily_stats["stat_date"], "yyyy-MM-dd")
     )
 
-    daily_stats.write \
+    result = daily_stats.select("stat_date", "daily_students", "daily_selections",
+                           "select_count", "drop_count", "daily_courses")
+
+    result.write \
         .format("jdbc") \
         .option("url", JDBC_URL) \
         .options(**JDBC_PROPS) \
@@ -58,8 +67,8 @@ def main():
         .mode("overwrite") \
         .save()
 
-    print(f"[DailyStats] Updated {daily_stats.count()} days")
-    daily_stats.show(30, False)
+    print(f"[DailyStats] Updated {result.count()} days")
+    result.show(30, False)
 
     spark.stop()
 

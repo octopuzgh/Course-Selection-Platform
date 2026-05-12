@@ -17,6 +17,8 @@ public class CourseHistoryStats {
     private String courseNo;
     private Integer totalSelected;
     private Integer totalRecords;
+    private Integer selectCount;
+    private Integer dropCount;
     private LocalDateTime firstSelectTime;
     private LocalDateTime lastSelectTime;
     private Integer rank;

@@ -18,6 +18,8 @@ public class DailyStats {
     private LocalDate statDate;
     private Integer dailyStudents;
     private Integer dailySelections;
+    private Integer selectCount;
+    private Integer dropCount;
     private Integer dailyCourses;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

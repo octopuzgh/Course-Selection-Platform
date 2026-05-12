@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import count_distinct, row_number, to_date, date_format
+from pyspark.sql.functions import count_distinct, row_number, date_format, col
 from pyspark.sql.window import Window
 
 from config import (
@@ -30,29 +30,44 @@ def main():
         .format("jdbc") \
         .option("url", JDBC_URL) \
         .options(**JDBC_PROPS) \
-        .option("dbtable", "selection_record") \
+        .option("dbtable", "selection_log") \
         .load()
 
-    df.createOrReplaceTempView("selection_record")
+    df.createOrReplaceTempView("selection_log")
 
     course_stats = spark.sql("""
         SELECT
             course_no,
-            COUNT(DISTINCT student_no) AS total_selected,
-            COUNT(*) AS total_records,
-            MIN(select_time) AS first_select_time,
-            MAX(select_time) AS last_select_time
-        FROM selection_record
+            COUNT(DISTINCT CASE WHEN action = 'SELECT' THEN student_no END) AS select_students,
+            COUNT(DISTINCT CASE WHEN action = 'DROP' THEN student_no END) AS drop_students,
+            COUNT(CASE WHEN action = 'SELECT' THEN 1 END) AS select_count,
+            COUNT(CASE WHEN action = 'DROP' THEN 1 END) AS drop_count,
+            MIN(operate_time) AS first_select_time,
+            MAX(operate_time) AS last_select_time
+        FROM selection_log
         GROUP BY course_no
     """)
 
-    window_spec = Window.orderBy(course_stats["total_selected"].desc())
+    course_stats = course_stats.withColumn(
+        "total_selected",
+        col("select_students") - col("drop_students")
+    )
+    course_stats = course_stats.withColumn(
+        "total_records",
+        col("select_count") + col("drop_count")
+    )
+
+    window_spec = Window.orderBy(col("total_selected").desc())
     ranked = course_stats.withColumn("rank", row_number().over(window_spec))
 
     ranked = ranked.withColumn("first_select_time", date_format(ranked["first_select_time"], "yyyy-MM-dd HH:mm:ss"))
     ranked = ranked.withColumn("last_select_time", date_format(ranked["last_select_time"], "yyyy-MM-dd HH:mm:ss"))
 
-    ranked.write \
+    result = ranked.select("course_no", "total_selected", "total_records",
+                           "select_count", "drop_count",
+                           "first_select_time", "last_select_time", "rank")
+
+    result.write \
         .format("jdbc") \
         .option("url", JDBC_URL) \
         .options(**JDBC_PROPS) \
@@ -61,8 +76,8 @@ def main():
         .mode("overwrite") \
         .save()
 
-    print(f"[CourseHistoryStats] Updated {ranked.count()} courses")
-    ranked.show(10, False)
+    print(f"[CourseHistoryStats] Updated {result.count()} courses")
+    result.show(10, False)
 
     spark.stop()
 
