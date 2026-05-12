@@ -16,11 +16,12 @@ object StreamingStatsApplication {
 
   val RANKING_KEY = "course:ranking"
   val STOCK_KEY_PREFIX = "course:stock:"
-  val STATS_TOTAL_KEY = "stats:total"
-  val STATS_TODAY_COUNT_KEY = "stats:today:count"
-  val STATS_TODAY_STUDENTS_KEY = "stats:today:students"
-
   val SELECTION_RECORD_REDIS_KEY_PREFIX = "selection:record:"
+
+  val DAILY_COUNT_KEY = "stats:daily:count"
+  val DAILY_STUDENTS_KEY = "stats:daily:students"
+  val DAILY_COURSE_SELECTIONS_KEY_PREFIX = "course:daily:selections:"
+  val COURSE_POPULARITY_KEY_PREFIX = "course:popularity:"
 
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder
@@ -67,17 +68,35 @@ object StreamingStatsApplication {
         val jedis = new Jedis(redisHost, redisPort, 3000)
         jedis.select(redisDb)
 
+        val today = java.time.LocalDate.now().toString
+        val dailyCountKey = DAILY_COUNT_KEY + ":" + today
+        val dailyStudentsKey = DAILY_STUDENTS_KEY + ":" + today
+
         val messages = batchDF.as[SelectionMessage].collect()
         messages.foreach { msg =>
           if (msg.`type` == "SELECT") {
             jedis.set(SELECTION_RECORD_REDIS_KEY_PREFIX + msg.studentNo + ":" + msg.courseNo, "1")
+
+            jedis.incr(dailyCountKey)
+            jedis.sadd(dailyStudentsKey, msg.studentNo)
+            jedis.expire(dailyCountKey, 172800)
+            jedis.expire(dailyStudentsKey, 172800)
+
+            jedis.zincrby(COURSE_POPULARITY_KEY_PREFIX + today, 1, msg.courseNo)
+            jedis.expire(COURSE_POPULARITY_KEY_PREFIX + today, 172800)
+
           } else if (msg.`type` == "DROP") {
             jedis.del(SELECTION_RECORD_REDIS_KEY_PREFIX + msg.studentNo + ":" + msg.courseNo)
+
+            jedis.decr(dailyCountKey)
+            jedis.srem(dailyStudentsKey, msg.studentNo)
+
+            jedis.zincrby(COURSE_POPULARITY_KEY_PREFIX + today, -1, msg.courseNo)
           }
         }
 
         jedis.close()
-        println(s"[Batch $epochId] Processed ${messages.length} messages")
+        println(s"[Batch $epochId] Processed ${messages.length} messages for date: $today")
       }
       .option("checkpointLocation", "/tmp/spark/checkpoint/realtime_stats")
       .outputMode("append")

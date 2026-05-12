@@ -73,10 +73,6 @@ public class SelectionServiceImpl implements SelectionService {
             rankingService.updateRanking(courseNo);
             messageProducer.sendSelectionMessage(studentNo, courseNo);
 
-            redisTemplate.opsForValue().increment("stats:total");
-            redisTemplate.opsForValue().increment("stats:today:count");
-            redisTemplate.opsForSet().add("stats:today:students", studentNo);
-
             log.info("学生{}成功选课{}", studentNo, courseNo);
             return SelectionResponse.success(generateSelectionId());
 
@@ -113,10 +109,6 @@ public class SelectionServiceImpl implements SelectionService {
             selectedRecordService.unmarkSelected(studentNo, courseNo);
             rankingService.restoreRanking(courseNo);
             messageProducer.sendDropMessage(studentNo, courseNo);
-
-            redisTemplate.opsForValue().decrement("stats:total");
-            redisTemplate.opsForValue().decrement("stats:today:count");
-            redisTemplate.opsForSet().remove("stats:today:students", studentNo);
 
             log.info("学生{}成功退课{}", studentNo, courseNo);
             return SelectionResponse.success(generateSelectionId());
