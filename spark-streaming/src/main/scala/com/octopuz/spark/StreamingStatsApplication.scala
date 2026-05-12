@@ -20,6 +20,8 @@ object StreamingStatsApplication {
   val STATS_TODAY_COUNT_KEY = "stats:today:count"
   val STATS_TODAY_STUDENTS_KEY = "stats:today:students"
 
+  val SELECTION_RECORD_REDIS_KEY_PREFIX = "selection:record:"
+
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder
       .appName("RealtimeSelectionStats")
@@ -29,7 +31,7 @@ object StreamingStatsApplication {
 
     val yaml = new Yaml()
     val config = yaml.load(new FileInputStream("src/main/resources/application.yml"))
-      .asInstanceOf[util.LinkedHashMap[String, util.LinkedHashMap[String, Any]]]
+      .asInstanceOf[LinkedHashMap[String, LinkedHashMap[String, Any]]]
 
     val kafkaConfig = config.get("kafka")
     val kafkaBrokers = kafkaConfig.get("bootstrap-servers").asInstanceOf[String]
@@ -68,17 +70,9 @@ object StreamingStatsApplication {
         val messages = batchDF.as[SelectionMessage].collect()
         messages.foreach { msg =>
           if (msg.`type` == "SELECT") {
-            jedis.decr(STOCK_KEY_PREFIX + msg.courseNo)
-            jedis.zincrby(RANKING_KEY, -1, msg.courseNo)
-            jedis.incr(STATS_TOTAL_KEY)
-            jedis.incr(STATS_TODAY_COUNT_KEY)
-            jedis.sadd(STATS_TODAY_STUDENTS_KEY, msg.studentNo)
+            jedis.set(SELECTION_RECORD_REDIS_KEY_PREFIX + msg.studentNo + ":" + msg.courseNo, "1")
           } else if (msg.`type` == "DROP") {
-            jedis.incr(STOCK_KEY_PREFIX + msg.courseNo)
-            jedis.zincrby(RANKING_KEY, 1, msg.courseNo)
-            jedis.decr(STATS_TOTAL_KEY)
-            jedis.decr(STATS_TODAY_COUNT_KEY)
-            jedis.srem(STATS_TODAY_STUDENTS_KEY, msg.studentNo)
+            jedis.del(SELECTION_RECORD_REDIS_KEY_PREFIX + msg.studentNo + ":" + msg.courseNo)
           }
         }
 
