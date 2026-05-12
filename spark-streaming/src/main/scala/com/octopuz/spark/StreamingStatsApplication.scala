@@ -14,13 +14,8 @@ object StreamingStatsApplication {
 
   case class SelectionMessage(studentNo: String, courseNo: String, `type`: String)
 
-  val RANKING_KEY = "course:ranking"
-  val STOCK_KEY_PREFIX = "course:stock:"
-  val SELECTION_RECORD_REDIS_KEY_PREFIX = "selection:record:"
-
   val DAILY_COUNT_KEY = "stats:daily:count"
   val DAILY_STUDENTS_KEY = "stats:daily:students"
-  val DAILY_COURSE_SELECTIONS_KEY_PREFIX = "course:daily:selections:"
   val COURSE_POPULARITY_KEY_PREFIX = "course:popularity:"
 
   def main(args: Array[String]): Unit = {
@@ -68,15 +63,13 @@ object StreamingStatsApplication {
         val jedis = new Jedis(redisHost, redisPort, 3000)
         jedis.select(redisDb)
 
-        val today = java.time.LocalDate.now().toString
+        val today = LocalDate.now().toString
         val dailyCountKey = DAILY_COUNT_KEY + ":" + today
         val dailyStudentsKey = DAILY_STUDENTS_KEY + ":" + today
 
         val messages = batchDF.as[SelectionMessage].collect()
         messages.foreach { msg =>
           if (msg.`type` == "SELECT") {
-            jedis.set(SELECTION_RECORD_REDIS_KEY_PREFIX + msg.studentNo + ":" + msg.courseNo, "1")
-
             jedis.incr(dailyCountKey)
             jedis.sadd(dailyStudentsKey, msg.studentNo)
             jedis.expire(dailyCountKey, 172800)
@@ -86,8 +79,6 @@ object StreamingStatsApplication {
             jedis.expire(COURSE_POPULARITY_KEY_PREFIX + today, 172800)
 
           } else if (msg.`type` == "DROP") {
-            jedis.del(SELECTION_RECORD_REDIS_KEY_PREFIX + msg.studentNo + ":" + msg.courseNo)
-
             jedis.decr(dailyCountKey)
             jedis.srem(dailyStudentsKey, msg.studentNo)
 
