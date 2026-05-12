@@ -52,11 +52,11 @@ public class OfflineStatsService {
         LambdaQueryWrapper<DailyStats> wrapper = new LambdaQueryWrapper<>();
         List<DailyStats> allStats = dailyStatsMapper.selectList(wrapper);
 
-        long totalCount = allStats.stream().mapToLong(DailyStats::getTotalCount).sum();
-        long totalStudents = allStats.stream().mapToLong(DailyStats::getUniqueStudents).sum();
+        long totalSelections = allStats.stream().mapToLong(DailyStats::getDailySelections).sum();
+        long totalStudents = allStats.stream().mapToLong(DailyStats::getDailyStudents).sum();
 
         Map<String, Object> summary = new HashMap<>();
-        summary.put("totalCount", totalCount);
+        summary.put("totalSelections", totalSelections);
         summary.put("totalStudents", totalStudents);
         summary.put("totalDays", allStats.size());
         return summary;

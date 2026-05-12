@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/stats")
+@RequestMapping("/api/offline")
 @RequiredArgsConstructor
 public class OfflineStatsController {
 
@@ -27,9 +27,8 @@ public class OfflineStatsController {
         return ResponseEntity.ok(offlineStatsService.getCourseRanking(limit));
     }
 
-    @GetMapping("/course/total")
-    public ResponseEntity<CourseHistoryStats> getCourseTotal(
-            @RequestParam String courseNo) {
+    @GetMapping("/course/{courseNo}")
+    public ResponseEntity<CourseHistoryStats> getCourseTotal(@PathVariable String courseNo) {
         return ResponseEntity.ok(offlineStatsService.getCourseTotal(courseNo));
     }
 

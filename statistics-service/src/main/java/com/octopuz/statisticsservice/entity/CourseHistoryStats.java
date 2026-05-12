@@ -15,8 +15,11 @@ import java.time.LocalDateTime;
 @TableName("course_history_stats")
 public class CourseHistoryStats {
     private String courseNo;
-    private String courseName;
     private Integer totalSelected;
+    private Integer totalRecords;
+    private LocalDateTime firstSelectTime;
+    private LocalDateTime lastSelectTime;
     private Integer rank;
-    private LocalDateTime lastUpdateTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

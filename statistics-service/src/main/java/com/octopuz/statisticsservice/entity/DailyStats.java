@@ -16,7 +16,9 @@ import java.time.LocalDateTime;
 @TableName("daily_stats")
 public class DailyStats {
     private LocalDate statDate;
-    private Integer totalCount;
-    private Integer uniqueStudents;
-    private LocalDateTime createTime;
+    private Integer dailyStudents;
+    private Integer dailySelections;
+    private Integer dailyCourses;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

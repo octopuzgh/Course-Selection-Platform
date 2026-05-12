@@ -1,5 +1,7 @@
 package com.octopuz.statisticsservice.service;
 
+import com.octopuz.statisticsservice.dto.DailyStatsDTO;
+import com.octopuz.statisticsservice.dto.PopularityItem;
 import com.octopuz.statisticsservice.dto.RankingItem;
 import com.octopuz.statisticsservice.dto.TodayStats;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +11,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -25,6 +28,12 @@ public class RealTimeStatsService {
     private static final String STOCK_KEY_PREFIX = "course:stock:";
     private static final String CAPACITY_KEY_PREFIX = "course:capacity:";
     private static final String SELECTED_KEY_PREFIX = "selected:";
+    private static final String STATS_TOTAL_KEY = "stats:total";
+    private static final String STATS_TODAY_COUNT_KEY = "stats:today:count";
+    private static final String STATS_TODAY_STUDENTS_KEY = "stats:today:students";
+    private static final String DAILY_COUNT_KEY_PREFIX = "stats:daily:count:";
+    private static final String DAILY_STUDENTS_KEY_PREFIX = "stats:daily:students:";
+    private static final String COURSE_POPULARITY_KEY_PREFIX = "course:popularity:";
 
     public List<RankingItem> getTop10() {
         return getRankingList(1, 10);
@@ -72,15 +81,15 @@ public class RealTimeStatsService {
     }
 
     public Long getTotalCount() {
-        String count = redisTemplate.opsForValue().get("stats:total");
+        String count = redisTemplate.opsForValue().get(STATS_TOTAL_KEY);
         return count != null ? Long.parseLong(count) : 0L;
     }
 
     public TodayStats getTodayStats() {
-        String countStr = redisTemplate.opsForValue().get("stats:today:count");
+        String countStr = redisTemplate.opsForValue().get(STATS_TODAY_COUNT_KEY);
         Long totalCount = countStr != null ? Long.parseLong(countStr) : 0L;
 
-        Long uniqueStudents = redisTemplate.opsForSet().size("stats:today:students");
+        Long uniqueStudents = redisTemplate.opsForSet().size(STATS_TODAY_STUDENTS_KEY);
 
         return TodayStats.builder()
                 .totalCount(totalCount)
@@ -97,6 +106,72 @@ public class RealTimeStatsService {
     public boolean isSelected(String studentNo, String courseNo) {
         String key = SELECTED_KEY_PREFIX + studentNo + ":" + courseNo;
         return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+    }
+
+    public DailyStatsDTO getDailyStats(String date) {
+        String countKey = DAILY_COUNT_KEY_PREFIX + date;
+        String studentsKey = DAILY_STUDENTS_KEY_PREFIX + date;
+
+        String countStr = redisTemplate.opsForValue().get(countKey);
+        Long dailyCount = countStr != null ? Long.parseLong(countStr) : 0L;
+
+        Long dailyStudents = redisTemplate.opsForSet().size(studentsKey);
+
+        return DailyStatsDTO.builder()
+                .dailyCount(dailyCount)
+                .dailyStudents(dailyStudents)
+                .build();
+    }
+
+    public DailyStatsDTO getTodayDailyStats() {
+        String today = LocalDate.now().toString();
+        return getDailyStats(today);
+    }
+
+    public List<PopularityItem> getPopularityTop10() {
+        return getPopularityRanking(1, 10);
+    }
+
+    public List<PopularityItem> getPopularityRanking(Integer page, Integer size) {
+        return getPopularityRanking(LocalDate.now().toString(), page, size);
+    }
+
+    public List<PopularityItem> getPopularityRanking(String date, Integer page, Integer size) {
+        if (page == null || page < 1) {
+            page = 1;
+        }
+        if (size == null || size < 1) {
+            size = 10;
+        }
+
+        String key = COURSE_POPULARITY_KEY_PREFIX + date;
+        Long total = redisTemplate.opsForZSet().zCard(key);
+        if (total == null || total == 0) {
+            return new ArrayList<>();
+        }
+
+        long start = (long) (page - 1) * size;
+        long end = Math.min(start + size - 1, total - 1);
+
+        Set<ZSetOperations.TypedTuple<String>> tuples = redisTemplate.opsForZSet()
+                .reverseRangeWithScores(key, start, end);
+
+        List<PopularityItem> ranking = new ArrayList<>();
+        if (tuples != null) {
+            int rank = (int) start + 1;
+            for (ZSetOperations.TypedTuple<String> tuple : tuples) {
+                String courseNo = tuple.getValue();
+                Integer selectionCount = tuple.getScore() != null ? tuple.getScore().intValue() : 0;
+
+                PopularityItem item = PopularityItem.builder()
+                        .courseNo(courseNo)
+                        .selectionCount(selectionCount)
+                        .rank(rank++)
+                        .build();
+                ranking.add(item);
+            }
+        }
+        return ranking;
     }
 
     private Integer getTotalCapacity(String courseNo) {
