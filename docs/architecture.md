@@ -3,27 +3,48 @@
 ## 一、项目总览
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        学生选课系统 (select-platform)                         │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐ │
-│   │ basic-   │   │selection-│   │statistics│   │  spark-  │   │  spark-  │ │
-│   │ service  │   │ service  │   │ -service │   │streaming │   │ pyspark  │ │
-│   │ (8080)   │   │ (8081)   │   │ (8082)   │   │          │   │          │ │
-│   └────┬─────┘   └────┬─────┘   └────┬─────┘   └────┬─────┘   └────┬─────┘ │
-│        │              │              │              │              │        │
-│        │         ┌────┴────┐         │              │              │        │
-│        │         │  Kafka  │─────────┼──────────────┘              │        │
-│        │         └─────────┘         │                             │        │
-│        │              │              │                             │        │
-│        └──────────────┼──────────────┼─────────────────────────────┘        │
-│                       │              │                                      │
-│              ┌────────┴──────┐  ┌────┴────────┐                             │
-│              │    Redis      │  │    MySQL     │                             │
-│              └───────────────┘  └─────────────┘                             │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+                            用户请求
+                                │
+                                ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                           前端 (Frontend)                                  │
+└──────────────────────────────────────────────────────────────────────────┘
+                                │
+        ┌───────────────────────┼───────────────────────┐
+        │                       │                       │
+        ▼                       ▼                       ▼
+┌──────────────┐       ┌──────────────┐       ┌──────────────┐
+│basic-service │       │selection-    │       │statistics-   │
+│   (8080)     │       │service       │       │service       │
+│              │       │   (8081)     │       │   (8082)     │
+│ • 学生管理    │◄─────►│              │       │              │
+│ • 课程管理    │ HTTP  │ • 选课/退课   │       │ • 实时统计    │
+│ • 用户登录    │       │ • 库存管理    │       │ • 离线统计    │
+│ • 选课记录    │       │ • 分布式锁    │       │              │
+└──────────────┘       └───────┬──────┘       └───────┬──────┘
+                                │                       │
+                                │ Kafka                 │ MySQL
+                                │ selection-topic        │ course_history_stats
+                                ▼                       │ daily_stats
+                    ┌─────────────────────┐            │
+                    │  Spark Streaming    │            │
+                    │  (实时流处理)        │            │
+                    └─────────┬───────────┘            │
+                              │                        │
+                              │ Redis                  │
+                              ▼                        │
+                    ┌─────────────────────┐            │
+                    │  stats:total        │            │
+                    │  stats:today:*      │            │
+                    │  course:ranking     │◄───────────┘
+                    │  course:popularity:*│
+                    └─────────────────────┘
+                              ▲
+                              │
+                    ┌─────────────────────┐
+                    │  PySpark 批处理      │
+                    │  (日度 ETL)         │
+                    └─────────────────────┘
 ```
 
 ---
@@ -37,6 +58,9 @@
 **技术栈**：Spring Boot + MyBatis-Plus + MySQL + Knife4j (Swagger)
 
 #### 目录结构
+
+<details>
+<summary>点击展开/收起</summary>
 
 ```
 basic-service/
@@ -52,7 +76,7 @@ basic-service/
 │   ├── Course.java                  # 课程实体
 │   ├── Student.java                 # 学生实体
 │   ├── User.java                    # 用户实体
-│   └── Selection_Record.java       # 选课记录实体
+│   └── Selection_Record.java        # 选课记录实体
 ├── mapper/                          # MyBatis Mapper
 ├── config/
 │   ├── CorsConfig.java              # 跨域配置
@@ -62,6 +86,8 @@ basic-service/
 └── common/
     └── Result.java                  # 统一响应格式
 ```
+
+</details>
 
 #### API 接口
 
@@ -121,6 +147,9 @@ id, studentNo, courseNo, selectTime
 
 #### 目录结构
 
+<details>
+<summary>点击展开/收起</summary>
+
 ```
 selection-service/
 ├── controller/
@@ -170,6 +199,8 @@ selection-service/
     └── SelectionLogMapper.java
 ```
 
+</details>
+
 #### 选课流程（核心）
 
 ```
@@ -192,7 +223,7 @@ SelectionServiceImpl.selectCourse()
         │
         ├── 7. 更新排行榜（Redis: course:ranking ZSet -1）
         │
-        ├── 8. 发送 Kafka 消息（topic: selection_topic）
+        ├── 8. 发送 Kafka 消息（topic: selection-topic）
         │       │
         │       ├── SelectionConsumer → MySQL: selection_record 表
         │       └── Spark Streaming → Redis 统计 key
@@ -221,17 +252,6 @@ SelectionServiceImpl.dropCourse()
         └── 9. 释放分布式锁
 ```
 
-#### Redis Key 管理
-
-| Key | 类型 | 用途 | 管理服务 |
-|-----|------|------|----------|
-| `lock:selection:{courseNo}` | String | 分布式锁 | LockServiceImpl |
-| `course:stock:{courseNo}` | String | 课程库存 | StockServiceImpl |
-| `course:capacity:{courseNo}` | String | 课程容量 | StockServiceImpl |
-| `course:ranking` | ZSet | 库存充足榜 | RankingServiceImpl |
-| `selected:{studentNo}:{courseNo}` | String | 已选标记 | SelectedRecordServiceImpl |
-| `global:selection:id` | String | 选课ID生成 | SelectionServiceImpl |
-
 ---
 
 ### 3. statistics-service (8082) - 统计查询服务
@@ -241,6 +261,9 @@ SelectionServiceImpl.dropCourse()
 **技术栈**：Spring Boot + Redis + MyBatis-Plus + MySQL
 
 #### 目录结构
+
+<details>
+<summary>点击展开/收起</summary>
 
 ```
 statistics-service/
@@ -262,6 +285,8 @@ statistics-service/
     ├── CourseHistoryStatsMapper.java
     └── DailyStatsMapper.java
 ```
+
+</details>
 
 #### 实时统计 API (`/api/realtime/*`)
 
@@ -296,10 +321,10 @@ statistics-service/
 
 **技术栈**：Spark Structured Streaming + Kafka + Redis (Jedis)
 
-#### 核心代码
+#### 核心逻辑
 
 ```scala
-// 消费 Kafka topic: selection_topic
+// 消费 Kafka topic: selection-topic
 // 解析 JSON: {studentNo, courseNo, type: "SELECT"|"DROP"}
 
 // SELECT 时更新 Redis:
@@ -312,17 +337,6 @@ jedis.sadd("stats:today:students", studentNo)    // 今日学生
 
 // DROP 时反向操作（decr/srem/zincrby -1）
 ```
-
-#### 管理的 Redis Key
-
-| Key | 类型 | 说明 |
-|-----|------|------|
-| `stats:total` | String | 累计选课总数 |
-| `stats:today:count` | String | 今日选课次数 |
-| `stats:today:students` | Set | 今日选课学生 |
-| `stats:daily:count:{date}` | String | 每日选课次数 |
-| `stats:daily:students:{date}` | Set | 每日选课学生 |
-| `course:popularity:{date}` | ZSet | 每日热度榜 |
 
 ---
 
@@ -351,92 +365,89 @@ jedis.sadd("stats:today:students", studentNo)    // 今日学生
 输出: MySQL daily_stats 表 (overwrite)
 ```
 
-#### 输出表结构
-
-**course_history_stats**：
-| 字段 | 说明 |
-|------|------|
-| course_no | 课程号 |
-| total_selected | 净选课人数 |
-| total_records | 总操作次数 |
-| select_count | 选课次数 |
-| drop_count | 退课次数 |
-| first_select_time | 首次选课时间 |
-| last_select_time | 最近选课时间 |
-| rank | 排名 |
-
-**daily_stats**：
-| 字段 | 说明 |
-|------|------|
-| stat_date | 统计日期 |
-| daily_students | 当日选课学生数 |
-| daily_selections | 当日净选课次数 |
-| select_count | 当日选课次数 |
-| drop_count | 当日退课次数 |
-| daily_courses | 当日涉及课程数 |
-
 ---
 
 ## 三、完整数据流
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                              选课数据流                                    │
-├──────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  前端                                                                     │
-│   │                                                                      │
-│   │ POST /api/selection/select                                          │
-│   ▼                                                                      │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │  8081 SelectionServiceImpl.selectCourse()                         │   │
-│  │                                                                   │   │
-│  │  ① 调用 8080 校验学生/课程                                        │   │
-│  │  ② Redis 检查已选 (selected:*)                                   │   │
-│  │  ③ Redisson 分布式锁 (lock:selection:*)                          │   │
-│  │  ④ Redis 扣库存 (course:stock:*)                                 │   │
-│  │  ⑤ Redis 标记已选 (selected:*)                                   │   │
-│  │  ⑥ Redis 更新排行榜 (course:ranking)                             │   │
-│  │  ⑦ Kafka 发送消息 (selection_topic)                              │   │
-│  │  ⑧ AOP 发送日志 (selection-log-topic)                            │   │
-│  │  ⑨ 释放分布式锁                                                   │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                    │                                                      │
-│          ┌─────────┴─────────┐                                           │
-│          ▼                   ▼                                           │
-│  ┌───────────────┐   ┌───────────────┐                                   │
-│  │ SelectionConsumer│ │ LogConsumer  │                                   │
-│  │ → selection_record│ │ → selection_log│                                 │
-│  │   (MySQL)      │   │   (MySQL)    │                                   │
-│  └───────────────┘   └───────┬───────┘                                   │
-│                              │                                           │
-│                              ▼                                           │
-│  ┌───────────────┐   ┌───────────────┐                                   │
-│  │Spark Streaming│   │   PySpark     │                                   │
-│  │ → Redis 统计  │   │ → MySQL 统计表 │                                   │
-│  └───────┬───────┘   └───────┬───────┘                                   │
-│          │                   │                                           │
-│          ▼                   ▼                                           │
-│  ┌───────────────┐   ┌───────────────┐                                   │
-│  │     Redis     │   │    MySQL      │                                   │
-│  │  stats:total  │   │ course_history│                                   │
-│  │  stats:today  │   │   _stats      │                                   │
-│  │  stats:daily  │   │  daily_stats  │                                   │
-│  │  popularity   │   │               │                                   │
-│  └───────┬───────┘   └───────┬───────┘                                   │
-│          │                   │                                           │
-│          └─────────┬─────────┘                                           │
-│                    ▼                                                     │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │  8082 StatisticsService                                           │   │
-│  │  ├── RealTimeStatsController → Redis                             │   │
-│  │  └── OfflineStatsController  → MySQL                             │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                    │                                                      │
-│                    ▼                                                      │
-│                  前端（统计页/历史页）                                      │
-│                                                                          │
+│                           选课数据流                                      │
 └──────────────────────────────────────────────────────────────────────────┘
+
+Step 1: 用户请求
+────────────────
+    前端
+      │
+      │ POST /api/selection/select
+      ▼
+
+Step 2: 选课服务处理
+────────────────────
+┌──────────────────────────────────────────────────────────────────┐
+│ 8081 SelectionServiceImpl.selectCourse()                           │
+│                                                                  │
+│  ① 调用 8080 校验学生/课程                                         │
+│  ② Redis 检查已选标记 (selected:{studentNo}:{courseNo})           │
+│  ③ Redisson 获取分布式锁 (lock:selection:{courseNo})              │
+│  ④ Redis 检查/扣减库存 (course:stock:{courseNo})                  │
+│  ⑤ Redis 标记已选 (SET selected:{studentNo}:{courseNo} 1)        │
+│  ⑥ Redis 更新库存充足榜 (ZINCRBY course:ranking -1 {courseNo})   │
+│  ⑦ Kafka 发送选课消息 (selection-topic)                           │
+│  ⑧ @LogSelection AOP → 日志落库 (selection-log-topic)            │
+│  ⑨ 释放分布式锁                                                   │
+└──────────────────────────────────────────────────────────────────┘
+      │
+      ├────────────────────────────┬────────────────────────────┐
+      │                            │                            │
+      ▼                            ▼                            ▼
+
+Step 3: 消息消费
+────────────────
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│ SelectionConsumer│  │   LogConsumer   │  │Spark Streaming  │
+│                 │  │                 │  │                 │
+│ → selection_    │  │ → selection_    │  │ → Redis 实时指标 │
+│   record表      │  │   log表         │  │   stats:total   │
+│   (MySQL)       │  │   (MySQL)      │  │   stats:today:* │
+└─────────────────┘  └─────────────────┘  │   popularity:*  │
+                                          └────────┬────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │     Redis       │
+                                          │                 │
+                                          │ stats:total     │
+                                          │ stats:today:*   │
+                                          │ course:ranking  │
+                                          │ course:popular* │
+                                          └────────┬────────┘
+                                                   │
+                                          ┌────────┴────────┐
+                                          │   PySpark      │
+                                          │   日度 ETL     │
+                                          │ → MySQL 统计表  │
+                                          └────────┬────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │     MySQL       │
+                                          │                 │
+                                          │course_history_  │
+                                          │  stats表        │
+                                          │ daily_stats表   │
+                                          └────────┬────────┘
+                                                   │
+                                                   ▼
+                                          ┌─────────────────┐
+                                          │ 8082 Statistics │
+                                          │    Service      │
+                                          │                 │
+                                          │ RealTime API → Redis
+                                          │ Offline API  → MySQL
+                                          └────────┬────────┘
+                                                   │
+                                                   ▼
+                                              前端查询
 ```
 
 ---
@@ -469,3 +480,9 @@ jedis.sadd("stats:today:students", studentNo)    // 今日学生
 | PySpark | - | 离线批处理 | MySQL → MySQL |
 
 ---
+
+## 六、详细设计文档
+
+Redis Key 设计、MySQL 表结构、Kafka Topic 配置等内容请参阅：
+
+- [系统设计文档](./design.md)

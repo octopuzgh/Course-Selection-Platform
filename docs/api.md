@@ -406,12 +406,13 @@ GET /api/realtime/popularity/2024-01-15?page=1&size=10
 
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
-| limit | Integer | 否 | 10 | 返回数量 |
+| page | Integer | 否 | 1 | 页码 |
+| size | Integer | 否 | 10 | 每页数量 |
 
 #### 请求示例
 
 ```
-GET /api/offline/course/ranking?limit=10
+GET /api/offline/course/ranking?page=1&size=10
 ```
 
 #### 响应示例
@@ -420,15 +421,13 @@ GET /api/offline/course/ranking?limit=10
 [
     {
         "courseNo": "CS101",
-        "totalSelected": 500,
-        "totalRecords": 520,
-        "selectCount": 510,
-        "dropCount": 10,
-        "firstSelectTime": "2024-01-01T09:00:00",
-        "lastSelectTime": "2024-01-15T18:30:00",
-        "rank": 1,
-        "createdAt": "2024-01-01T00:00:00",
-        "updatedAt": "2024-01-15T00:00:00"
+        "totalSelected": 80,
+        "totalRecords": 85,
+        "selectCount": 82,
+        "dropCount": 2,
+        "firstSelectTime": "2024-01-10 08:00:00",
+        "lastSelectTime": "2024-01-15 16:30:00",
+        "rank": 1
     }
 ]
 ```
@@ -437,12 +436,12 @@ GET /api/offline/course/ranking?limit=10
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| totalSelected | Integer | 净选课人数 (SELECT - DROP) |
-| totalRecords | Integer | 总操作次数 (SELECT + DROP) |
+| totalSelected | Integer | 净选课人数 |
+| totalRecords | Integer | 总操作次数 |
 | selectCount | Integer | 选课次数 |
 | dropCount | Integer | 退课次数 |
-| firstSelectTime | LocalDateTime | 首次选课时间 |
-| lastSelectTime | LocalDateTime | 最近选课时间 |
+| firstSelectTime | String | 首次选课时间 |
+| lastSelectTime | String | 最近选课时间 |
 | rank | Integer | 排名 |
 
 ---
@@ -468,15 +467,13 @@ GET /api/offline/course/CS101
 ```json
 {
     "courseNo": "CS101",
-    "totalSelected": 500,
-    "totalRecords": 520,
-    "selectCount": 510,
-    "dropCount": 10,
-    "firstSelectTime": "2024-01-01T09:00:00",
-    "lastSelectTime": "2024-01-15T18:30:00",
-    "rank": 1,
-    "createdAt": "2024-01-01T00:00:00",
-    "updatedAt": "2024-01-15T00:00:00"
+    "totalSelected": 80,
+    "totalRecords": 85,
+    "selectCount": 82,
+    "dropCount": 2,
+    "firstSelectTime": "2024-01-10 08:00:00",
+    "lastSelectTime": "2024-01-15 16:30:00",
+    "rank": 1
 }
 ```
 
@@ -488,15 +485,15 @@ GET /api/offline/course/CS101
 
 #### 请求参数 (Query)
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| start | LocalDate | ✅ | 开始日期 (yyyy-MM-dd) |
-| end | LocalDate | ✅ | 结束日期 (yyyy-MM-dd) |
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | Integer | 否 | 1 | 页码 |
+| size | Integer | 否 | 30 | 每页数量 |
 
 #### 请求示例
 
 ```
-GET /api/offline/daily?start=2024-01-01&end=2024-01-15
+GET /api/offline/daily?page=1&size=30
 ```
 
 #### 响应示例
@@ -504,24 +501,12 @@ GET /api/offline/daily?start=2024-01-01&end=2024-01-15
 ```json
 [
     {
-        "statDate": "2024-01-01",
-        "dailyStudents": 150,
-        "dailySelections": 160,
-        "selectCount": 165,
-        "dropCount": 5,
-        "dailyCourses": 25,
-        "createdAt": "2024-01-02T00:00:00",
-        "updatedAt": "2024-01-02T00:00:00"
-    },
-    {
-        "statDate": "2024-01-02",
-        "dailyStudents": 145,
-        "dailySelections": 150,
-        "selectCount": 155,
-        "dropCount": 5,
-        "dailyCourses": 23,
-        "createdAt": "2024-01-03T00:00:00",
-        "updatedAt": "2024-01-03T00:00:00"
+        "statDate": "2024-01-15",
+        "dailyStudents": 105,
+        "dailySelections": 98,
+        "selectCount": 100,
+        "dropCount": 2,
+        "dailyCourses": 12
     }
 ]
 ```
@@ -530,9 +515,9 @@ GET /api/offline/daily?start=2024-01-01&end=2024-01-15
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| statDate | LocalDate | 统计日期 |
-| dailyStudents | Integer | 当日选课学生数（去重） |
-| dailySelections | Integer | 当日净选课次数 (SELECT - DROP) |
+| statDate | String | 统计日期 |
+| dailyStudents | Integer | 当日选课学生数 |
+| dailySelections | Integer | 当日净选课次数 |
 | selectCount | Integer | 当日选课次数 |
 | dropCount | Integer | 当日退课次数 |
 | dailyCourses | Integer | 当日涉及课程数 |
@@ -547,9 +532,12 @@ GET /api/offline/daily?start=2024-01-01&end=2024-01-15
 
 ```json
 {
-    "totalSelections": 15230,
-    "totalStudents": 8920,
-    "totalDays": 45
+    "totalCourses": 50,
+    "totalSelections": 1523,
+    "totalStudents": 420,
+    "avgSelectionsPerCourse": 30.46,
+    "maxDailySelections": 156,
+    "minDailySelections": 23
 }
 ```
 
@@ -557,30 +545,30 @@ GET /api/offline/daily?start=2024-01-01&end=2024-01-15
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| totalSelections | Long | 历史累计净选课次数 |
-| totalStudents | Long | 历史累计选课学生人次 |
-| totalDays | Integer | 统计天数 |
+| totalCourses | Integer | 课程总数 |
+| totalSelections | Long | 累计净选课次数 |
+| totalStudents | Long | 累计选课学生数 |
+| avgSelectionsPerCourse | Double | 平均每门课程选课人数 |
+| maxDailySelections | Integer | 单日最高选课次数 |
+| minDailySelections | Integer | 单日最低选课次数 |
 
 ---
 
-## 接口总览
+## 8080 Basic Service (端口 8080)
 
-| 服务 | 方法 | 路径 | 说明 |
-|------|------|------|------|
-| 8081 | POST | `/api/selection/select` | 选课 |
-| 8081 | POST | `/api/selection/drop` | 退课 |
-| 8082 | GET | `/api/realtime/rank/top10` | 库存充足榜 Top10 |
-| 8082 | GET | `/api/realtime/rank/list` | 库存充足榜（分页） |
-| 8082 | GET | `/api/realtime/stats/total` | 累计选课总数 |
-| 8082 | GET | `/api/realtime/stats/today` | 今日统计 |
-| 8082 | GET | `/api/realtime/course/{courseNo}/remaining` | 课程剩余名额 |
-| 8082 | GET | `/api/realtime/check/selected` | 检查是否已选 |
-| 8082 | GET | `/api/realtime/daily/today` | 今日选课统计 |
-| 8082 | GET | `/api/realtime/daily/{date}` | 指定日期选课统计 |
-| 8082 | GET | `/api/realtime/popularity/top10` | 今日热度榜 Top10 |
-| 8082 | GET | `/api/realtime/popularity/list` | 热度榜（分页） |
-| 8082 | GET | `/api/realtime/popularity/{date}` | 指定日期热度榜 |
-| 8082 | GET | `/api/offline/course/ranking` | 历史课程排名 |
-| 8082 | GET | `/api/offline/course/{courseNo}` | 单门课程历史统计 |
-| 8082 | GET | `/api/offline/daily` | 每日选课趋势 |
-| 8082 | GET | `/api/offline/summary` | 汇总统计 |
+### 基础信息
+- **Base URL**: `http://localhost:8080`
+- **Content-Type**: `application/json`
+- **API 文档**: Knife4j (`http://localhost:8080/doc.html`)
+
+### 核心接口
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/courses/{courseNo}` | 查询单个课程 |
+| GET | `/courses` | 获取所有课程列表 |
+| GET | `/students` | 获取所有学生列表 |
+| GET | `/students/{studentNo}` | 查询学生信息 |
+| POST | `/users/login` | 用户登录 |
+
+完整接口文档访问 Knife4j UI：`http://localhost:8080/doc.html`
