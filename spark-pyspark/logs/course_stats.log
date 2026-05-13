@@ -1,0 +1,20 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+26/05/13 11:06:36 WARN Utils: Your hostname, octuouz-virtual-machine, resolves to a loopback address: 127.0.1.1; using 192.168.152.131 instead (on interface ens33)
+26/05/13 11:06:36 WARN Utils: Set SPARK_LOCAL_IP if you need to bind to another address
+26/05/13 11:06:36 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/05/13 11:06:42 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/05/13 11:06:42 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/05/13 11:06:42 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/05/13 11:06:44 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/05/13 11:06:44 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/05/13 11:06:44 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+[CourseHistoryStats] Updated 0 courses
++---------+--------------+-------------+------------+----------+-----------------+----------------+----+
+|course_no|total_selected|total_records|select_count|drop_count|first_select_time|last_select_time|rank|
++---------+--------------+-------------+------------+----------+-----------------+----------------+----+
++---------+--------------+-------------+------------+----------+-----------------+----------------+----+
+
