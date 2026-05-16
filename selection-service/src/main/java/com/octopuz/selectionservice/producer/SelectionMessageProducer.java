@@ -1,6 +1,7 @@
 package com.octopuz.selectionservice.producer;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +26,9 @@ public class SelectionMessageProducer {
     private SelectionRecordMapper selectionRecordMapper;
     @Autowired
     private SelectionLogMapper selectionLogMapper;
-    private static final String SELECTION_TOPIC = "selection_topic";
+
+    @Value("${KAFKA_TOPIC}")
+    private String selectionTopic;
 
     public void sendSelectionMessage(String studentNo, String courseNo) {
         sendMessage(studentNo, courseNo, "SELECT");
@@ -39,7 +42,7 @@ public class SelectionMessageProducer {
         try {
             SelectionMessage message = new SelectionMessage(studentNo, courseNo, type);
             String json = JSON.toJSONString(message);
-            kafkaTemplate.send(SELECTION_TOPIC, json);
+            kafkaTemplate.send(selectionTopic, json);
             log.debug("发送选课消息到Kafka: {}", json);
         } catch (Exception e) {
             log.error("发送Kafka消息失败（已重试3次），降级同步写库", e);

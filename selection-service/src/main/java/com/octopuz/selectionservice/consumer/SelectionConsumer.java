@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -43,7 +44,13 @@ public class SelectionConsumer {
             }
 
             ack.acknowledge();
-        } catch (Exception e) {
+            
+        } catch (DuplicateKeyException e) {
+            // 重复插入，已处理过，直接确认
+            log.debug("重复消息已处理: {}", message);
+            ack.acknowledge();
+        }
+        catch (Exception e) {
             log.error("处理选课消息失败: {}", message, e);
         }
     }

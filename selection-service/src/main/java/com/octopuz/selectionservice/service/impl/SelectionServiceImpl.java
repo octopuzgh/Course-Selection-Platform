@@ -1,20 +1,25 @@
 package com.octopuz.selectionservice.service.impl;
 
-import com.octopuz.selectionservice.annotation.LogSelection;
-import com.octopuz.selectionservice.client.BasicServiceClient;
-import com.octopuz.selectionservice.dto.RankingItem;
-import com.octopuz.selectionservice.dto.SelectionRequest;
-import com.octopuz.selectionservice.dto.SelectionResponse;
-import com.octopuz.selectionservice.producer.SelectionMessageProducer;
-import com.octopuz.selectionservice.service.interf.*;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import com.octopuz.selectionservice.annotation.LogSelection;
+import com.octopuz.selectionservice.client.BasicServiceClient;
+import com.octopuz.selectionservice.dto.SelectionRequest;
+import com.octopuz.selectionservice.dto.SelectionResponse;
+import com.octopuz.selectionservice.exception.BusinessException;
+import com.octopuz.selectionservice.producer.SelectionMessageProducer;
+import com.octopuz.selectionservice.service.interf.LockService;
+import com.octopuz.selectionservice.service.interf.RankingService;
+import com.octopuz.selectionservice.service.interf.SelectedRecordService;
+import com.octopuz.selectionservice.service.interf.SelectionService;
+import com.octopuz.selectionservice.service.interf.StockService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -45,40 +50,40 @@ public class SelectionServiceImpl implements SelectionService {
         String courseNo = request.getCourseNo();
 
         if (!validateStudentAndCourse(studentNo, courseNo)) {
-            return SelectionResponse.fail("学生或课程不存在");
+            throw new BusinessException("学生或课程不存在");
         }
 
         if (selectedRecordService.isSelected(studentNo, courseNo)) {
-            return SelectionResponse.fail("您已选该课程");
+            throw new BusinessException("您已选该课程");
         }
 
         String lockKey = LOCK_KEY_PREFIX + courseNo;
+        boolean lockAcquired = false;
         try {
-            if (!lockService.tryLock(lockKey, 5, 10, TimeUnit.SECONDS)) {
-                return SelectionResponse.fail("系统繁忙，请稍后重试");
+            lockAcquired = lockService.tryLock(lockKey, 5, 10, TimeUnit.SECONDS);
+            if (!lockAcquired) {
+                throw new BusinessException("系统繁忙，请稍后重试");
             }
 
             if (!stockService.checkStock(courseNo)) {
-                return SelectionResponse.fail("课程已选满");
+                throw new BusinessException("课程已选满");
             }
 
             if (!stockService.deductStock(courseNo)) {
-                return SelectionResponse.fail("课程已选满");
+                throw new BusinessException("课程已选满");
             }
 
             selectedRecordService.markSelected(studentNo, courseNo, 1, TimeUnit.HOURS);
             rankingService.updateRanking(courseNo);
             messageProducer.sendSelectionMessage(studentNo, courseNo);
 
-            redisTemplate.opsForValue().increment("stats:total");
-            redisTemplate.opsForValue().increment("stats:today:count");
-            redisTemplate.opsForSet().add("stats:today:students", studentNo);
-
             log.info("学生{}成功选课{}", studentNo, courseNo);
             return SelectionResponse.success(generateSelectionId());
 
         } finally {
-            lockService.unlock(lockKey);
+            if (lockAcquired) {
+                lockService.unlock(lockKey);
+            }
         }
     }
 
@@ -89,17 +94,19 @@ public class SelectionServiceImpl implements SelectionService {
         String courseNo = request.getCourseNo();
 
         if (!validateStudentAndCourse(studentNo, courseNo)) {
-            return SelectionResponse.fail("学生或课程不存在");
+            throw new BusinessException("学生或课程不存在");
         }
 
         if (!selectedRecordService.isSelected(studentNo, courseNo)) {
-            return SelectionResponse.fail("您未选该课程");
+            throw new BusinessException("您未选该课程");
         }
 
         String lockKey = LOCK_KEY_PREFIX + courseNo;
+        boolean lockAcquired = false;
         try {
-            if (!lockService.tryLock(lockKey, 5, 10, TimeUnit.SECONDS)) {
-                return SelectionResponse.fail("系统繁忙，请稍后重试");
+            lockAcquired = lockService.tryLock(lockKey, 5, 10, TimeUnit.SECONDS);
+            if (!lockAcquired) {
+                throw new BusinessException("系统繁忙，请稍后重试");
             }
 
             stockService.restoreStock(courseNo);
@@ -107,21 +114,14 @@ public class SelectionServiceImpl implements SelectionService {
             rankingService.restoreRanking(courseNo);
             messageProducer.sendDropMessage(studentNo, courseNo);
 
-            redisTemplate.opsForValue().decrement("stats:total");
-            redisTemplate.opsForValue().decrement("stats:today:count");
-            redisTemplate.opsForSet().remove("stats:today:students", studentNo);
-
             log.info("学生{}成功退课{}", studentNo, courseNo);
             return SelectionResponse.success(generateSelectionId());
 
         } finally {
-            lockService.unlock(lockKey);
+            if (lockAcquired) {
+                lockService.unlock(lockKey);
+            }
         }
-    }
-
-    @Override
-    public List<RankingItem> getAllCourses(Integer page, Integer size) {
-        return rankingService.getAllCourses(page, size);
     }
 
     private boolean validateStudentAndCourse(String studentNo, String courseNo) {
@@ -131,6 +131,6 @@ public class SelectionServiceImpl implements SelectionService {
     }
 
     private Long generateSelectionId() {
-        return System.currentTimeMillis() + (long) (Math.random() * 1000);
+        return redisTemplate.opsForValue().increment("global:selection:id");
     }
 }

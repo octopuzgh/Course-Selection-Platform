@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
   application:
     name: selection-service
   # datasource
@@ -31,6 +33,8 @@ spring:
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
       retries: 3
       acks: -1
+      properties:
+        enable.idempotence: true
     consumer:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer

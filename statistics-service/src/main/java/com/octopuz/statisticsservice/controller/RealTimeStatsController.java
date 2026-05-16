@@ -1,5 +1,7 @@
 package com.octopuz.statisticsservice.controller;
 
+import com.octopuz.statisticsservice.dto.DailyStatsDTO;
+import com.octopuz.statisticsservice.dto.PopularityItem;
 import com.octopuz.statisticsservice.dto.RankingItem;
 import com.octopuz.statisticsservice.dto.TodayStats;
 import com.octopuz.statisticsservice.service.RealTimeStatsService;
@@ -11,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/realtime")
 @RequiredArgsConstructor
 public class RealTimeStatsController {
 
@@ -50,5 +52,35 @@ public class RealTimeStatsController {
             @RequestParam String studentNo,
             @RequestParam String courseNo) {
         return ResponseEntity.ok(realTimeStatsService.isSelected(studentNo, courseNo));
+    }
+
+    @GetMapping("/daily/today")
+    public ResponseEntity<DailyStatsDTO> getTodayDailyStats() {
+        return ResponseEntity.ok(realTimeStatsService.getTodayDailyStats());
+    }
+
+    @GetMapping("/daily/{date}")
+    public ResponseEntity<DailyStatsDTO> getDailyStats(@PathVariable String date) {
+        return ResponseEntity.ok(realTimeStatsService.getDailyStats(date));
+    }
+
+    @GetMapping("/popularity/top10")
+    public ResponseEntity<List<PopularityItem>> getPopularityTop10() {
+        return ResponseEntity.ok(realTimeStatsService.getPopularityTop10());
+    }
+
+    @GetMapping("/popularity/list")
+    public ResponseEntity<List<PopularityItem>> getPopularityRanking(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        return ResponseEntity.ok(realTimeStatsService.getPopularityRanking(page, size));
+    }
+
+    @GetMapping("/popularity/{date}")
+    public ResponseEntity<List<PopularityItem>> getPopularityRankingByDate(
+            @PathVariable String date,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        return ResponseEntity.ok(realTimeStatsService.getPopularityRanking(date, page, size));
     }
 }
