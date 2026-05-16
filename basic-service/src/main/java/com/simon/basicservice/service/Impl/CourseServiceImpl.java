@@ -51,4 +51,26 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
         // 更新成功后重新查询返回最新状态
         return getByCourseNo(courseNo);
     }
+
+    @Override
+    @Transactional
+    public Course incrementRemaining(String courseNo) {
+        Course course = getByCourseNo(courseNo);
+        if (course == null) {
+            return null;
+        }
+
+        LambdaUpdateWrapper<Course> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(Course::getCourseNo, courseNo)
+                .lt(Course::getSelectedCount, course.getTotalCapacity())
+                .setSql("remaining = remaining + 1, selected_count = selected_count - 1");
+
+        int rows = baseMapper.update(null, updateWrapper);
+        if (rows == 0) {
+            return null;
+        }
+
+        return getByCourseNo(courseNo);
+    }
+
 }

@@ -12,23 +12,24 @@ public class Result<T> {
     private String message;
     private T data;
 
-    public static final int SUCCESS_CODE = 200;
-    public static final int ERROR_CODE = 400;
-    public static final int UNAUTHORIZED_CODE = 401;
-    public static final int NOT_FOUND_CODE = 404;
-    public static final int CONFLICT_CODE = 409;
-    public static final int SERVER_ERROR_CODE = 500;
-
     public static <T> Result<T> success() {
-        return new Result<>(SUCCESS_CODE, "成功", null);
+        return new Result<>(ErrorCode.SUCCESS.getCode(), ErrorCode.SUCCESS.getMessage(), null);
     }
 
     public static <T> Result<T> success(T data) {
-        return new Result<>(SUCCESS_CODE, "成功", data);
+        return new Result<>(ErrorCode.SUCCESS.getCode(), ErrorCode.SUCCESS.getMessage(), data);
     }
 
     public static <T> Result<T> success(String message, T data) {
-        return new Result<>(SUCCESS_CODE, message, data);
+        return new Result<>(ErrorCode.SUCCESS.getCode(), message, data);
+    }
+
+    public static <T> Result<T> error(ErrorCode errorCode) {
+        return new Result<>(errorCode.getCode(), errorCode.getMessage(), null);
+    }
+
+    public static <T> Result<T> error(ErrorCode errorCode, String message) {
+        return new Result<>(errorCode.getCode(), message, null);
     }
 
     public static <T> Result<T> error(int code, String message) {
@@ -36,10 +37,10 @@ public class Result<T> {
     }
 
     public static <T> Result<T> error(String message) {
-        return new Result<>(ERROR_CODE, message, null);
+        return new Result<>(ErrorCode.BAD_REQUEST.getCode(), message, null);
     }
 
     public static <T> Result<T> serverError(String message) {
-        return new Result<>(SERVER_ERROR_CODE, message, null);
+        return new Result<>(ErrorCode.SERVER_ERROR.getCode(), message, null);
     }
 }

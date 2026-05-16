@@ -72,4 +72,39 @@ public class Selection_RecordServiceImpl extends ServiceImpl<Selection_RecordMap
 
         return "选课成功";
     }
+
+    @Override
+    @Transactional
+    public String dropCourse(String studentNo, String courseNo) {
+        Student student = studentService.getByStudentNo(studentNo);
+        if (student == null) {
+            return "学生不存在";
+        }
+
+        Course course = courseService.getByCourseNo(courseNo);
+        if (course == null) {
+            return "课程不存在";
+        }
+
+        if (!hasSelected(studentNo, courseNo)) {
+            return "未选过该课程，无法退课";
+        }
+
+        LambdaQueryWrapper<Selection_Record> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Selection_Record::getStudentNo, studentNo)
+                .eq(Selection_Record::getCourseNo, courseNo);
+        boolean removed = this.remove(wrapper);
+
+        if (!removed) {
+            return "退课失败，请稍后重试";
+        }
+
+        Course updated = courseService.incrementRemaining(courseNo);
+        if (updated == null) {
+            return "退课部分成功：记录已删除，但名额恢复失败，请联系管理员";
+        }
+
+        return "退课成功";
+    }
+
 }

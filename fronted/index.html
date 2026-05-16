@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>选课平台前端</title>
+  <link rel="stylesheet" href="styles.css" />
+  <meta name="description" content="简单的学生选课前端，调用 8080/8081/8082 服务" />
+</head>
+<body>
+  <header>
+    <h1>学生选课系统</h1>
+    <nav>
+      <button id="nav-courses" class="active">课程列表</button>
+      <button id="nav-stats">统计</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="courses-view" class="view">
+      <div class="controls">
+        <label>学号: <input id="studentNo" placeholder="例如 2024001" /></label>
+        <button id="refresh-courses">刷新课程</button>
+      </div>
+      <div id="courses" class="grid"></div>
+    </section>
+
+    <section id="stats-view" class="view hidden">
+      <h2>实时统计</h2>
+      <div id="top10" class="grid"></div>
+      <div class="stats-row">
+        <button id="refresh-top10">刷新排行</button>
+        <button id="load-total">加载累计选课次数</button>
+        <div id="total-count" class="muted"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <small>本前端为演示用途，调用后端服务：8080(basic)、8081(selection)、8082(statistics)</small>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

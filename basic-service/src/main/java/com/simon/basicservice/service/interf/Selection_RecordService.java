@@ -13,4 +13,6 @@ public interface Selection_RecordService extends IService<Selection_Record> {
 
     //完整选课流程：验证 -> 扣库存 -> 插入记录（8080 自己使用）
     String fullSelectCourse(String studentNo, String courseNo);
+
+    String dropCourse(String studentNo, String courseNo);
 }

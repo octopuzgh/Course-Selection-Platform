@@ -1,9 +1,6 @@
 package com.simon.basicservice.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -21,7 +18,7 @@ public class Selection_Record {
     @TableField("course_no")
     private String courseNo;
 
-    @TableField("select_time")
+    @TableField(value="select_time", fill = FieldFill.INSERT)
     private LocalDateTime selectTime;
 
 }

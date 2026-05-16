@@ -1,6 +1,9 @@
 package com.simon.basicservice.controller;
 
+import com.simon.basicservice.annotation.RequireRole;
+import com.simon.basicservice.common.ErrorCode;
 import com.simon.basicservice.common.Result;
+import com.simon.basicservice.dto.StudentCreateRequest;
 import com.simon.basicservice.dto.StudentSelection;
 import com.simon.basicservice.entity.Course;
 import com.simon.basicservice.entity.Selection_Record;
@@ -10,13 +13,12 @@ import com.simon.basicservice.service.interf.Selection_RecordService;
 import com.simon.basicservice.service.interf.StudentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Tag(name = "学生管理", description = "学生信息的查询接口")
@@ -32,32 +34,68 @@ public class StudentController {
     @Autowired
     private CourseService courseService;
 
-    //查询学生列表
+    @Operation(summary = "创建学生", description = "新增一个学生信息")
+    @RequireRole(RequireRole.ADMIN)
+    @PostMapping
+    public Result<Student> createStudent(@Valid @RequestBody StudentCreateRequest request) {
+        Student existingStudent = studentService.getByStudentNo(request.getStudentNo());
+        if (existingStudent != null) {
+            return Result.error(ErrorCode.STUDENT_ALREADY_EXISTS);
+        }
+
+        Student student = new Student();
+        student.setStudentNo(request.getStudentNo());
+        student.setName(request.getName());
+        student.setMajor(request.getMajor());
+        student.setGrade(request.getGrade());
+
+        boolean success = studentService.save(student);
+        if (success) {
+            return Result.success(student);
+        }
+        return Result.error(ErrorCode.SERVER_ERROR);
+    }
+
+    @Operation(summary = "删除学生", description = "根据学号删除学生信息")
+    @RequireRole(RequireRole.ADMIN)
+    @DeleteMapping("/{studentNo}")
+    public Result<Void> deleteStudent(@PathVariable String studentNo) {
+        Student student = studentService.getByStudentNo(studentNo);
+        if (student == null) {
+            return Result.error(ErrorCode.STUDENT_NOT_FOUND);
+        }
+
+        boolean success = studentService.removeById(student.getId());
+        if (success) {
+            return Result.success(null);
+        }
+        return Result.error(ErrorCode.SERVER_ERROR);
+    }
+
     @Operation(summary = "获取所有学生列表", description = "查询系统中所有学生的列表")
+    @RequireRole(RequireRole.ADMIN)
     @GetMapping
     public Result<List<Student>> getAllStudents() {
         List<Student> students = studentService.list();
         return Result.success(students);
     }
 
-    // 查询学生（path中为学号）
     @Operation(summary = "查询学生信息", description = "根据学号查询学生的详细信息")
     @GetMapping("/{studentNo}")
     public Result<Student> getStudent(@PathVariable String studentNo) {
         Student student = studentService.getByStudentNo(studentNo);
         if (student == null) {
-            return Result.error(404, "学生不存在");
+            return Result.error(ErrorCode.STUDENT_NOT_FOUND);
         }
         return Result.success(student);
     }
 
-    //查询学生选课情况
     @Operation(summary = "查询学生选课情况", description = "根据学号查询学生已选的所有课程及详细信息")
     @GetMapping("/{studentNo}/selections")
     public Result<List<StudentSelection>> getStudentSelections(@PathVariable String studentNo) {
         Student student = studentService.getByStudentNo(studentNo);
         if (student == null) {
-            return Result.error(404, "学生不存在");
+            return Result.error(ErrorCode.STUDENT_NOT_FOUND);
         }
 
         List<Selection_Record> selectionRecords = selectionRecordService.lambdaQuery()

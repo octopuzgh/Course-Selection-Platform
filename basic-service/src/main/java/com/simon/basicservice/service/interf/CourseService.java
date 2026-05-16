@@ -16,4 +16,7 @@ public interface CourseService extends IService<Course> {
 
     //原子扣减名额（返回更新后的课程，失败返回 null）
     Course decrementRemaining(String courseNo);
+
+    Course incrementRemaining(String courseNo);
+
 }
