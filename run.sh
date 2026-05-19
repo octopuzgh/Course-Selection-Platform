@@ -16,13 +16,14 @@ show_menu() {
     echo "1. 启动 basic-service (8080)"
     echo "2. 启动 selection-service (8081)"
     echo "3. 启动 statistics-service (8082)"
-    echo "4. 启动 Spark Streaming (实时统计)"
-    echo "5. 运行 PySpark 每日统计"
-    echo "6. 运行 PySpark 课程历史统计"
-    echo "7. 一键启动所有 Spring Boot 服务"
-    echo "8. 退出"
+    echo "4. 启动前端 (静态页面)"
+    echo "5. 启动 Spark Streaming (实时统计)"
+    echo "6. 运行 PySpark 每日统计"
+    echo "7. 运行 PySpark 课程历史统计"
+    echo "8. 一键启动所有 Spring Boot 服务"
+    echo "9. 退出"
     echo "=========================================="
-    echo -n "请选择 [1-8] (多选用逗号分隔，如 1,2,3): "
+    echo -n "请选择 [1-9] (多选用逗号分隔，如 1,2,3): "
 }
 
 # 启动单个服务
@@ -45,17 +46,22 @@ start_service() {
             mvn spring-boot:run
             ;;
         4)
+            echo "启动前端 (8088)..."
+            cd "$PROJECT_DIR/fronted"
+            python3 -m http.server 8088
+            ;;
+        5)
             echo "启动 Spark Streaming (实时统计)..."
             cd "$PROJECT_DIR/spark-streaming"
             mvn clean package
             spark-submit --master ${SPARK_MASTER} target/spark-streaming-stats-1.0-SNAPSHOT.jar
             ;;
-        5)
+        6)
             echo "运行 PySpark 每日统计..."
             cd "$PROJECT_DIR/spark-pyspark"
             python3 daily_stats.py
             ;;
-        6)
+        7)
             echo "运行 PySpark 课程历史统计..."
             cd "$PROJECT_DIR/spark-pyspark"
             python3 course_stats.py
