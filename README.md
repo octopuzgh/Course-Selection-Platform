@@ -3,7 +3,6 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Spring%20Boot-3.5.14-brightgreen" alt="Spring Boot">
   <img src="https://img.shields.io/badge/Spark-4.1.1-orange" alt="Spark">
-  <img src="https://img.shields.io/badge/PySpark-4.1.1-orange" alt="PySpark">
   <img src="https://img.shields.io/badge/Kafka-3.7.0-black" alt="Kafka">
   <img src="https://img.shields.io/badge/Redis-6.x-red" alt="Redis">
   <img src="https://img.shields.io/badge/Redisson-3.24.3-red" alt="Redisson">
@@ -28,6 +27,7 @@
 
 | 类别 | 技术 | 版本 | 用途 |
 |:----|:----|:----|:----|
+| 前端 | HTML + CSS + JavaScript | - | 静态页面，选课界面 |
 | 微服务框架 | Spring Boot | 3.5.14 | 8080/8081/8082 三个独立服务 |
 | ORM | MyBatis-Plus | 3.5.15 | 数据库操作 |
 | 分布式锁 | Redisson | 3.24.3 | 选课并发控制 |
@@ -93,6 +93,7 @@
 
 | 服务 | 端口 | 职责 | 数据层 |
 |:-----|:-----|:-----|:-------|
+| frontend | 8088 | 静态页面，展示课程列表、选课退课、实时统计 | - |
 | basic-service | 8080 | 课程/学生/用户 CRUD、选课记录持久化 | MySQL |
 | selection-service | 8081 | 选课/退课核心业务、Redis 库存与排行榜 | Redis |
 | statistics-service | 8082 | 实时统计 + 历史统计查询 | Redis + MySQL |
@@ -198,14 +199,18 @@ SPARK_EXECUTOR_MEMORY=1g
 ==========================================
     智能选课平台 - 服务启动脚本
 ==========================================
-1. 启动 basic-service (8080)
-2. 启动 selection-service (8081)
-3. 启动 statistics-service (8082)
-4. 启动 Spark Streaming (实时统计)
-5. 运行 PySpark 每日统计
-6. 运行 PySpark 课程历史统计
-7. 一键启动所有 Spring Boot 服务
-8. 退出
+[S] 启动所有服务
+[1] basic-service (8080)
+[2] selection-service (8081)
+[3] statistics-service (8082)
+[4] 前端 (8088)
+-----------------------------------------
+[5] Spark Streaming (实时统计)
+[6] PySpark 每日统计
+[7] PySpark 课程历史统计
+-----------------------------------------
+[K] 关闭所有服务
+[Q] 退出
 ==========================================
 ```
 
@@ -236,6 +241,10 @@ sudo crontab -e
 
 ---
 
+## 🌐 前端
+
+详见 [fronted/README.md](fronted/README.md)
+
 ## 📁 项目文档
 
 | 文档 | 说明 |
@@ -243,6 +252,22 @@ sudo crontab -e
 | [架构文档](./docs/architecture.md) | 完整架构、各模块详解、数据流 |
 | [API 文档](./docs/api.md) | 8080/8081/8082 所有接口 |
 | [系统设计](./docs/design.md) | Redis Key、MySQL 表、Kafka Topic 设计 |
+
+## 📁 项目结构
+
+```
+select-platform/
+├── basic-service/          # 基础服务 (8080) - 学生/课程/用户 CRUD
+├── selection-service/      # 选课服务 (8081) - 选课/退课核心业务
+├── statistics-service/    # 统计服务 (8082) - 实时/离线统计查询
+├── spark-streaming/       # Spark Streaming 实时统计
+├── spark-pyspark/         # PySpark 离线批处理
+├── fronted/               # 前端静态页面
+├── data-import/           # 数据导入脚本
+├── docs/                  # 项目文档
+├── run.sh                 # Linux 服务启动脚本
+└── run-local.bat          # Windows 本地启动脚本
+```
 
 
 ## 📄 许可证
