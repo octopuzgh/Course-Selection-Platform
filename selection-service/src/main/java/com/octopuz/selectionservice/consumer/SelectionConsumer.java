@@ -1,14 +1,11 @@
 package com.octopuz.selectionservice.consumer;
 
 import com.alibaba.fastjson.JSON;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.octopuz.selectionservice.entity.SelectionRecord;
-import com.octopuz.selectionservice.mapper.SelectionRecordMapper;
+import com.octopuz.selectionservice.client.BasicServiceClient;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -20,7 +17,7 @@ import org.springframework.stereotype.Component;
 public class SelectionConsumer {
 
     @Autowired
-    private SelectionRecordMapper selectionRecordMapper;
+    private BasicServiceClient basicServiceClient;
 
     @KafkaListener(topics = "selection-topic", groupId = "${KAFKA_GROUP_ID}")
     public void consume(@Payload String message, Acknowledgment ack) {
@@ -29,28 +26,24 @@ public class SelectionConsumer {
             SelectionMessage msg = JSON.parseObject(message, SelectionMessage.class);
 
             if ("DROP".equals(msg.getType())) {
-                QueryWrapper<SelectionRecord> wrapper = new QueryWrapper<>();
-                wrapper.eq("student_no", msg.getStudentNo())
-                       .eq("course_no", msg.getCourseNo());
-                selectionRecordMapper.delete(wrapper);
-                log.info("退课记录删除成功: 学生{} 课程{}", msg.getStudentNo(), msg.getCourseNo());
+                boolean success = basicServiceClient.dropSelection(msg.getStudentNo(), msg.getCourseNo());
+                if (success) {
+                    log.info("退课成功: 学生{} 课程{}", msg.getStudentNo(), msg.getCourseNo());
+                } else {
+                    log.warn("退课失败: 学生{} 课程{}", msg.getStudentNo(), msg.getCourseNo());
+                }
             } else {
-                SelectionRecord record = SelectionRecord.builder()
-                        .studentNo(msg.getStudentNo())
-                        .courseNo(msg.getCourseNo())
-                        .build();
-                selectionRecordMapper.insert(record);
-                log.info("选课记录写入成功: 学生{} 课程{}", msg.getStudentNo(), msg.getCourseNo());
+                boolean success = basicServiceClient.submitSelection(msg.getStudentNo(), msg.getCourseNo());
+                if (success) {
+                    log.info("选课成功: 学生{} 课程{}", msg.getStudentNo(), msg.getCourseNo());
+                } else {
+                    log.warn("选课失败: 学生{} 课程{}", msg.getStudentNo(), msg.getCourseNo());
+                }
             }
 
             ack.acknowledge();
-            
-        } catch (DuplicateKeyException e) {
-            // 重复插入，已处理过，直接确认
-            log.debug("重复消息已处理: {}", message);
-            ack.acknowledge();
-        }
-        catch (Exception e) {
+
+        } catch (Exception e) {
             log.error("处理选课消息失败: {}", message, e);
         }
     }

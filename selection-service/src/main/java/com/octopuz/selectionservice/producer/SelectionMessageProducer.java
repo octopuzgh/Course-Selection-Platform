@@ -7,10 +7,12 @@ import org.springframework.stereotype.Component;
 
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.octopuz.selectionservice.client.BasicServiceClient;
 import com.octopuz.selectionservice.entity.SelectionLog;
 import com.octopuz.selectionservice.entity.SelectionRecord;
 import com.octopuz.selectionservice.mapper.SelectionLogMapper;
 import com.octopuz.selectionservice.mapper.SelectionRecordMapper;
+import com.octopuz.selectionservice.service.interf.StockService;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -26,6 +28,10 @@ public class SelectionMessageProducer {
     private SelectionRecordMapper selectionRecordMapper;
     @Autowired
     private SelectionLogMapper selectionLogMapper;
+    @Autowired
+    private StockService stockService;
+    @Autowired
+    private BasicServiceClient basicServiceClient;
 
     @Value("${KAFKA_TOPIC}")
     private String selectionTopic;
@@ -52,12 +58,6 @@ public class SelectionMessageProducer {
 
     private void fallbackWrite(String studentNo, String courseNo, String type) {
         if ("SELECT".equals(type)) {
-            SelectionRecord record = SelectionRecord.builder()
-                    .studentNo(studentNo)
-                    .courseNo(courseNo)
-                    .build();
-            selectionRecordMapper.insert(record);
-
             SelectionLog logEntry = SelectionLog.builder()
                     .studentNo(studentNo)
                     .courseNo(courseNo)
@@ -66,14 +66,19 @@ public class SelectionMessageProducer {
                     .build();
             selectionLogMapper.insert(logEntry);
 
-            log.info("降级写入选课记录成功：学生{} 课程{}", studentNo, courseNo);
+            basicServiceClient.submitSelection(studentNo, courseNo);
+
+            log.info("降级选课处理完成：学生{} 课程{}", studentNo, courseNo);
         } else if ("DROP".equals(type)) {
             selectionLogMapper.delete(new QueryWrapper<SelectionLog>()
                     .eq("student_no", studentNo)
                     .eq("course_no", courseNo)
                     .eq("action", "DROP"));
 
-            log.info("降级写入退课日志成功：学生{} 课程{}", studentNo, courseNo);
+            stockService.restoreStock(courseNo);
+            basicServiceClient.dropSelection(studentNo, courseNo);
+
+            log.info("降级退课处理完成：学生{} 课程{}", studentNo, courseNo);
         }
     }
 
