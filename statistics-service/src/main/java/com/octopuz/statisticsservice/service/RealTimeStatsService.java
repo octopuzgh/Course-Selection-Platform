@@ -1,5 +1,8 @@
 package com.octopuz.statisticsservice.service;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.octopuz.statisticsservice.client.BasicServiceClient;
 import com.octopuz.statisticsservice.dto.DailyStatsDTO;
 import com.octopuz.statisticsservice.dto.PopularityItem;
 import com.octopuz.statisticsservice.dto.RankingItem;
@@ -23,6 +26,8 @@ public class RealTimeStatsService {
 
     @Autowired
     private StringRedisTemplate redisTemplate;
+    @Autowired
+    private BasicServiceClient basicServiceClient;
 
     private static final String RANKING_KEY = "course:ranking";
     private static final String STOCK_KEY_PREFIX = "course:stock:";
@@ -66,9 +71,11 @@ public class RealTimeStatsService {
                 Integer remainingCount = tuple.getScore() != null ? tuple.getScore().intValue() : 0;
                 Integer totalCount = getTotalCapacity(courseNo);
                 Integer selectedCount = totalCount - remainingCount;
+                String courseName = getCourseName(courseNo);
 
                 RankingItem item = RankingItem.builder()
                         .courseNo(courseNo)
+                        .courseName(courseName)
                         .totalCount(totalCount)
                         .selectedCount(selectedCount)
                         .remainingCount(remainingCount)
@@ -78,6 +85,24 @@ public class RealTimeStatsService {
             }
         }
         return ranking;
+    }
+
+    private String getCourseName(String courseNo) {
+        try {
+            String courseJson = basicServiceClient.getCourse(courseNo);
+            if (courseJson != null) {
+                JSONObject obj = JSON.parseObject(courseJson);
+                if (obj != null && "200".equals(String.valueOf(obj.get("code")))) {
+                    JSONObject data = obj.getJSONObject("data");
+                    if (data != null) {
+                        return data.getString("courseName");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("获取课程{}名称失败: {}", courseNo, e.getMessage());
+        }
+        return null;
     }
 
     public Long getTotalCount() {
