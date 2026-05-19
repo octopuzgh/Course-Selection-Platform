@@ -49,20 +49,25 @@ public class SelectionServiceImpl implements SelectionService {
         String studentNo = request.getStudentNo();
         String courseNo = request.getCourseNo();
 
+        log.info("[SELECT] 学生{}开始选课{}, Thread={}", studentNo, courseNo, Thread.currentThread().getId());
+
         if (!validateStudentAndCourse(studentNo, courseNo)) {
             throw new BusinessException("学生或课程不存在");
         }
 
-        if (selectedRecordService.isSelected(studentNo, courseNo)) {
-            throw new BusinessException("您已选该课程");
-        }
-
         String lockKey = LOCK_KEY_PREFIX + courseNo;
+        log.info("[SELECT] 学生{}尝试获取锁{}, Thread={}", studentNo, lockKey, Thread.currentThread().getId());
         boolean lockAcquired = false;
         try {
             lockAcquired = lockService.tryLock(lockKey, 5, 10, TimeUnit.SECONDS);
+            log.info("[SELECT] 学生{}获取锁结果: {}, Thread={}", studentNo, lockAcquired, Thread.currentThread().getId());
             if (!lockAcquired) {
                 throw new BusinessException("系统繁忙，请稍后重试");
+            }
+
+            if (selectedRecordService.isSelected(studentNo, courseNo)) {
+                log.info("[SELECT] 学生{}已选过课程{}, Thread={}", studentNo, courseNo, Thread.currentThread().getId());
+                throw new BusinessException("您已选该课程");
             }
 
             if (!stockService.checkStock(courseNo)) {
@@ -83,6 +88,7 @@ public class SelectionServiceImpl implements SelectionService {
         } finally {
             if (lockAcquired) {
                 lockService.unlock(lockKey);
+                log.info("[SELECT] 学生{}释放锁{}, Thread={}", studentNo, lockKey, Thread.currentThread().getId());
             }
         }
     }

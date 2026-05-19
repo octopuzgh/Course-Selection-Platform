@@ -1,7 +1,11 @@
 package com.octopuz.selectionservice.client;
 
+import com.octopuz.selectionservice.dto.SelectionRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -18,9 +22,6 @@ public class BasicServiceClient {
         this.restTemplate = new RestTemplate();
     }
 
-    /**
-     * 查询学生信息
-     */
     public String getStudent(String studentNo) {
         try {
             return restTemplate.getForObject(basicServiceUrl + "/students/" + studentNo, String.class);
@@ -29,9 +30,6 @@ public class BasicServiceClient {
         }
     }
 
-    /**
-     * 查询课程信息
-     */
     public String getCourse(String courseNo) {
         try {
             return restTemplate.getForObject(basicServiceUrl + "/courses/" + courseNo, String.class);
@@ -40,9 +38,6 @@ public class BasicServiceClient {
         }
     }
 
-    /**
-     * 检查学生是否已选该课程
-     */
     public boolean hasSelectedCourse(String studentNo, String courseNo) {
         try {
             String url = basicServiceUrl + "/selections/check?studentNo=" + studentNo + "&courseNo=" + courseNo;
@@ -53,15 +48,54 @@ public class BasicServiceClient {
         }
     }
 
-    /**
-     * 获取所有课程列表
-     */
     public String getAllCourses() {
         try {
             return restTemplate.getForObject(basicServiceUrl + "/courses", String.class);
         } catch (Exception e) {
             log.error("获取课程列表失败", e);
             return null;
+        }
+    }
+
+    public boolean submitSelection(String studentNo, String courseNo) {
+        try {
+            String url = basicServiceUrl + "/selections/submit";
+            SelectionRequest request = new SelectionRequest();
+            request.setStudentNo(studentNo);
+            request.setCourseNo(courseNo);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("X-User-Role", "ADMIN");
+
+            HttpEntity<SelectionRequest> entity = new HttpEntity<>(request, headers);
+            String result = restTemplate.postForObject(url, entity, String.class);
+            log.debug("学生{}选课{}结果: {}", studentNo, courseNo, result);
+            return result != null && result.contains("选课成功");
+        } catch (Exception e) {
+            log.error("学生{}选课{}失败", studentNo, courseNo, e);
+            return false;
+        }
+    }
+
+    public boolean dropSelection(String studentNo, String courseNo) {
+        try {
+            String url = basicServiceUrl + "/selections/drop";
+            SelectionRequest request = new SelectionRequest();
+            request.setStudentNo(studentNo);
+            request.setCourseNo(courseNo);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("X-User-Role", "ADMIN");
+
+            HttpEntity<SelectionRequest> entity = new HttpEntity<>(request, headers);
+            String result = restTemplate.postForObject(url, entity, String.class);
+            log.debug("学生{}退课{}结果: {}", studentNo, courseNo, result);
+            return result != null && result.contains("退课成功");
+        } catch (Exception e) {
+            log.error("学生{}退课{}失败", studentNo, courseNo, e);
+            return false;
         }
     }
 }
