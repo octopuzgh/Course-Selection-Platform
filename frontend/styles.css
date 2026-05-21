@@ -1,0 +1,129 @@
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f7fa;color:#333;line-height:1.6}
+header{background:#fff;padding:1rem 2rem;box-shadow:0 2px 4px rgba(0,0,0,.1);display:flex;justify-content:space-between;align-items:center}
+header h1{color:#2c3e50}
+#user-info{display:flex;align-items:center;gap:1rem}
+#user-details-inline{display:flex;align-items:center;gap:0.8rem;font-size:.9rem;color:#34495e}
+#user-details-inline span{white-space:nowrap}
+#current-user{font-weight:600;color:#34495e}
+.role-badge{padding:.25rem .75rem;border-radius:20px;font-size:.85rem;font-weight:600}
+.role-badge.admin{background:#e74c3c;color:#fff}
+.role-badge.student{background:#3498db;color:#fff}
+.small-btn{padding:.4rem 1rem;border:none;background:#95a5a6;color:#fff;border-radius:4px;cursor:pointer}
+.small-btn:hover{background:#7f8c8d}
+nav{display:flex;gap:.5rem;padding:1rem 2rem;background:#fff;border-bottom:1px solid #e0e0e0}
+nav button{padding:.6rem 1.2rem;border:none;background:#ecf0f1;color:#2c3e50;border-radius:4px;cursor:pointer;font-weight:500}
+nav button.active,nav button:hover{background:#3498db;color:#fff}
+main{padding:2rem;max-width:1200px;margin:0 auto}
+.view{display:block}
+.view.hidden{display:none}
+.hidden{display:none !important}
+.login-container{max-width:400px;margin:4rem auto;background:#fff;padding:2rem;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.login-container h2{text-align:center;margin-bottom:1.5rem;color:#2c3e50}
+.login-form{display:flex;flex-direction:column;gap:1rem}
+.form-group{display:flex;flex-direction:column;gap:.5rem}
+.form-group label{font-weight:600;color:#34495e}
+.form-group input{padding:.6rem;border:1px solid #ddd;border-radius:4px;font-size:1rem}
+.form-group input:focus{outline:none;border-color:#3498db}
+.error-msg{color:#e74c3c;text-align:center;font-size:.9rem;min-height:1.2rem}
+.controls{display:flex;gap:1rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap}
+.controls label{display:flex;align-items:center;gap:.5rem}
+.controls input{padding:.5rem;border:1px solid #ddd;border-radius:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem}
+.card{background:#fff;padding:1.5rem;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.08);transition:transform .2s}
+.card:hover{transform:translateY(-2px);box-shadow:0 4px 8px rgba(0,0,0,.12)}
+.card h3{color:#2c3e50;margin-bottom:.75rem}
+.card p{color:#7f8c8d;font-size:.9rem;margin-bottom:.5rem}
+.action{width:100%;padding:.75rem;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;margin-top:1rem;background:#3498db}
+.action:hover{background:#2980b9}
+.action.success{background:#27ae60}
+.action.success:hover{background:#229954}
+.action.danger{background:#e74c3c}
+.action.danger:hover{background:#c0392b}
+.action:disabled{background:#95a5a6;cursor:not-allowed}
+.status-info{margin-top:.5rem;min-height:2rem;display:flex;align-items:center}
+.selected-badge{color:#27ae60;font-weight:600;font-size:.9rem}
+.not-selected-badge{color:#95a5a6;font-size:.9rem}
+.admin-hint{color:#e74c3c;font-size:.85rem;font-style:italic}
+.stats-row{display:flex;gap:1rem;align-items:center;margin-top:1.5rem;flex-wrap:wrap}
+.stats-row button{padding:.6rem 1.2rem;background:#2ecc71;color:#fff;border:none;border-radius:4px;cursor:pointer}
+.stats-row button:hover{background:#27ae60}
+.muted{color:#95a5a6;font-style:italic}
+.admin-section{background:#fff;padding:1.5rem;border-radius:8px;margin-bottom:1.5rem;box-shadow:0 2px 4px rgba(0,0,0,.08)}
+.admin-section h3{color:#2c3e50;margin-bottom:1rem;padding-bottom:.5rem;border-bottom:2px solid #3498db}
+.admin-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1rem}
+.admin-form input{padding:.6rem;border:1px solid #ddd;border-radius:4px}
+
+/* 删除课程区域样式 */
+.delete-course-form{
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+.delete-course-form input{
+  flex: 1;
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  height: 2.5rem;
+}
+.delete-course-form .action.danger{
+  width: 150px;
+  flex-shrink: 0;
+  padding: 0.6rem;
+  height: 2.5rem;
+  margin-top: 0;
+}
+
+/* 学生列表表格样式 */
+.students-table{
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,.08);
+}
+.students-table thead{
+  background: #3498db;
+  color: #fff;
+}
+.students-table th{
+  padding: 0.8rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.students-table td{
+  padding: 1rem;
+  border-bottom: 1px solid #ecf0f1;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.students-table tbody tr:hover{
+  background: #f8f9fa;
+}
+.students-table tbody tr:last-child td{
+  border-bottom: none;
+}
+
+/* 课程表格样式 */
+.courses-table td,
+.courses-table th {
+  text-align: center;
+}
+.courses-table td:nth-child(1),
+.courses-table th:nth-child(1) {
+  text-align: left;
+  padding-left: 1.5rem;
+}
+.courses-table .small-btn {
+  padding: 0.4rem 0.8rem;
+  margin: 0;
+}
+footer{text-align:center;padding:1.5rem;color:#95a5a6;font-size:.85rem}
+@media(max-width:768px){
+  header{flex-direction:column;gap:1rem;text-align:center}
+  nav{justify-content:center}
+  .controls{flex-direction:column;align-items:stretch}
+}

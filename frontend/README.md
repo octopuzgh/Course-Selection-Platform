@@ -21,7 +21,7 @@
 
 使用说明：
 - 在页面左上输入学号，点击“刷新课程”加载课程列表（从 `http://localhost:8082/api/realtime/rank/list` 获取）。
-- 点击“选课/退课”会向 `http://localhost:8081/api/selection/select` 或 `/drop` 发送请求。
+- 点击“选课/退课”会向 `http://localhost:8081/api/selection/admin/select` 或 `/api/selection/admin/drop` 发送管理员请求，并带上 `X-User-Role: ADMIN` 和 `X-Operator-Id: admin001` 请求头。
 - 统计页会展示今日热度 Top10（`/api/realtime/popularity/top10`）和累计选课次数（`/api/realtime/stats/total`）。
 
 注意：如果后端启用了 CSRF 或特定鉴权，请根据实际环境修改 `app.js` 中的请求头或认证逻辑。

@@ -12,7 +12,7 @@ public class User {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    private String username;
+    private String userid;
 
     private String password;
 

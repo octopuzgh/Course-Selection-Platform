@@ -23,16 +23,16 @@ public class UserController {
     @Operation(summary = "用户登录", description = "使用用户名和密码进行登录验证，返回用户角色信息")
     @PostMapping("/login")
     public Result<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        User user = userService.getByUsername(request.getUsername());
+        User user = userService.getByUserid(request.getUserid());
         if (user == null) {
             return Result.error(ErrorCode.USER_NOT_FOUND);
         }
 
         if (request.getPassword().equals(user.getPassword())) {
             LoginResponse response = new LoginResponse();
-            response.setUsername(user.getUsername());
+            response.setUserid(user.getUserid());
             response.setRole(user.getRole());
-            response.setToken("mock-token-" + user.getUsername());
+            response.setToken("mock-token-" + user.getUserid());
             return Result.success(response);
         } else {
             return Result.error(ErrorCode.USER_PASSWORD_ERROR);
@@ -42,7 +42,7 @@ public class UserController {
     @Operation(summary = "查询用户信息", description = "根据用户名查询用户信息（不返回密码字段）")
     @GetMapping("/{username}")
     public Result<User> getUser(@PathVariable String username) {
-        User user = userService.getByUsername(username);
+        User user = userService.getByUserid(username);
         if (user == null) {
             return Result.error(ErrorCode.USER_NOT_FOUND);
         }

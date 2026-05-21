@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>选课平台前端</title>
+  <link rel="stylesheet" href="styles.css" />
+  <meta name="description" content="简单的学生选课前端，调用 basic-service 8080 端口" />
+</head>
+<body>
+  <header>
+    <h1>学生选课系统</h1>
+    <div id="user-info" class="hidden">
+      <div id="user-details-inline">
+        <span id="user-studentno"></span>
+        <span id="user-name"></span>
+        <span id="user-major"></span>
+        <span id="user-grade"></span>
+      </div>
+      <span id="current-role" class="role-badge"></span>
+      <button id="logout-btn" class="small-btn">退出登录</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="login-view" class="view">
+      <div class="login-container">
+        <h2>用户登录</h2>
+        <div class="login-form">
+          <div class="form-group">
+            <label>用户名:</label>
+            <input id="login-userid" placeholder="请输入用户名" />
+          </div>
+          <div class="form-group">
+            <label>密码:</label>
+            <input id="login-password" type="password" placeholder="请输入密码" />
+          </div>
+          <button id="login-btn" class="action">登录</button>
+          <div id="login-error" class="error-msg"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="main-app" class="hidden">
+      <nav>
+        <button id="nav-courses" class="active">课程列表</button>
+        <button id="nav-stats">统计</button>
+        <button id="nav-admin" class="hidden">管理面板</button>
+      </nav>
+
+      <section id="courses-view" class="view">
+        <div class="controls">
+          <label>学号: <input id="studentNo" placeholder="例如 2024001" /></label>
+          <button id="refresh-courses">刷新课程</button>
+        </div>
+        <div id="courses"></div>
+      </section>
+
+      <section id="stats-view" class="view hidden">
+        <h2>实时统计</h2>
+        <div id="top10"></div>
+        <div class="stats-row">
+          <button id="refresh-top10">刷新排行</button>
+          <button id="load-total">加载累计选课次数</button>
+          <div id="total-count" class="muted"></div>
+        </div>
+      </section>
+
+          <section id="admin-view" class="view hidden">
+        <h2>管理面板</h2>
+        
+        <div class="admin-section">
+          <h3>课程管理</h3>
+          <div class="admin-form">
+            <input id="admin-course-no" placeholder="课程号" />
+            <input id="admin-course-name" placeholder="课程名称" />
+            <input id="admin-course-teacher" placeholder="教师" />
+            <input id="admin-course-credit" type="number" placeholder="学分" />
+            <input id="admin-course-capacity" type="number" placeholder="总容量" />
+            <button id="admin-add-course" class="action success">添加课程</button>
+          </div>
+          <div class="delete-course-form">
+            <input id="delete-course-no" placeholder="要删除的课程号" />
+            <button id="admin-delete-course" class="action danger">删除课程</button>
+          </div>
+          <div id="admin-courses-list" class="grid"></div>
+        </div>
+
+        <div class="admin-section">
+          <h3>学生管理</h3>
+          <div class="admin-form">
+            <input id="admin-student-no" placeholder="学号" />
+            <input id="admin-student-name" placeholder="姓名" />
+            <input id="admin-student-major" placeholder="专业" />
+            <input id="admin-student-grade" placeholder="年级" />
+            <button id="admin-add-student" class="action success">添加学生</button>
+          </div>
+          <button id="refresh-students" class="action">刷新学生列表</button>
+          <div id="students-list"></div>
+        </div>
+      </section>
+
+    </section>
+  </main>
+
+  <footer>
+    <small>本前端为演示用途，调用后端服务：8080(basic-service)</small>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
+
+

@@ -1,7 +1,10 @@
 package com.simon.basicservice.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -13,6 +16,14 @@ public class Knife4jConfig {
                 .info(new Info()
                         .title("学生管理系统API文档")
                         .version("1.0")
-                        .description("Knife4j集成Spring Boot 3.x示例"));
+                        .description("Knife4j集成Spring Boot 3.x示例"))
+                .components(new Components()
+                        .addSecuritySchemes("X-User-Role",
+                                new SecurityScheme()
+                                        .type(SecurityScheme.Type.APIKEY)
+                                        .in(SecurityScheme.In.HEADER)
+                                        .name("X-User-Role")
+                                        .description("用户角色：ADMIN-管理员，STUDENT-学生")))
+                .addSecurityItem(new SecurityRequirement().addList("X-User-Role"));
     }
 }

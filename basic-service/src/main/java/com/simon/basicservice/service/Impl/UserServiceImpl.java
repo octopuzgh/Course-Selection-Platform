@@ -11,9 +11,9 @@ import org.springframework.stereotype.Service;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
     @Override
-    public User getByUsername(String username) {
+    public User getByUserid(String userid) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(User::getUsername, username);
+        wrapper.eq(User::getUserid, userid);
         return this.getOne(wrapper);
     }
 }
