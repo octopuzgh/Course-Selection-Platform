@@ -1,0 +1,11 @@
+package com.octopuz.selectionservice.dto;
+
+import lombok.Data;
+
+@Data
+public class AdminSelectionRequest {
+
+    private String studentNo;
+
+    private String courseNo;
+}

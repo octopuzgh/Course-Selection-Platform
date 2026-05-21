@@ -6,6 +6,20 @@
 - **Base URL**: `http://localhost:8081/api/selection`
 - **Content-Type**: `application/json`
 
+### 请求头说明
+
+所有接口均需要以下请求头：
+
+| 请求头 | 必填 | 说明 | 示例 |
+|--------|------|------|------|
+| X-User-Role | ✅ | 角色权限 | `STUDENT` / `ADMIN` |
+| X-Operator-Id | ✅ | 操作人ID（谁做的操作） | `20240001` / `admin001` |
+
+> **注意**：`X-Operator-Id` 用于日志追踪，记录真实操作人。
+> - 学生自己操作：传学生学号
+> - 管理员代操作：传管理员ID
+> - 如果不传：`operator` 默认记录为 `SYSTEM`
+
 ---
 
 ### 1. 选课
@@ -59,6 +73,72 @@
 | 参数 | 类型 | 必填 | 说明 | 示例 |
 |------|------|------|------|------|
 | studentNo | String | ✅ | 学号 | "2024001" |
+| courseNo | String | ✅ | 课程号 | "CS101" |
+
+#### 请求示例
+
+```json
+{
+    "studentNo": "2024001",
+    "courseNo": "CS101"
+}
+```
+
+#### 响应示例
+
+```json
+{
+    "success": true,
+    "code": "DROP_SUCCESS",
+    "message": "退课成功"
+}
+```
+
+---
+
+### 3. 管理员帮学生选课
+
+**POST** `/api/selection/admin/select`
+
+#### 请求参数 (Body)
+
+| 参数 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| studentNo | String | ✅ | 学号（被选课的学生） | "2024001" |
+| courseNo | String | ✅ | 课程号 | "CS101" |
+
+#### 请求示例
+
+```json
+{
+    "studentNo": "2024001",
+    "courseNo": "CS101"
+}
+```
+
+#### 响应示例
+
+```json
+{
+    "success": true,
+    "code": "SELECT_SUCCESS",
+    "message": "选课成功"
+}
+```
+
+> 日志中 `operator` 字段记录的是请求头 `X-Operator-Id` 的值，而非 `studentNo`
+
+---
+
+### 4. 管理员帮学生退课
+
+**POST** `/api/selection/admin/drop`
+
+#### 请求参数 (Body)
+
+| 参数 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| studentNo | String | ✅ | 学号（被退课的学生） | "2024001" |
 | courseNo | String | ✅ | 课程号 | "CS101" |
 
 #### 请求示例

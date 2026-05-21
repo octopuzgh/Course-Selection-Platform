@@ -83,9 +83,10 @@ CREATE TABLE selection_record (
 -- 选课日志表（SELECT/DROP 都记录）
 CREATE TABLE selection_log (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    student_no VARCHAR(20) NOT NULL,
-    course_no VARCHAR(20) NOT NULL,
+    student_no VARCHAR(20) NOT NULL COMMENT '学号',
+    course_no VARCHAR(20) NOT NULL COMMENT '课程号',
     action VARCHAR(10) NOT NULL COMMENT 'SELECT or DROP',
+    operator VARCHAR(50) NOT NULL COMMENT '操作人ID（学生本人或管理员）',
     operate_time DATETIME NOT NULL,
     UNIQUE KEY uk_log (student_no, course_no, action, operate_time)
 );

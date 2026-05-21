@@ -1,6 +1,7 @@
 package com.octopuz.selectionservice.aspect;
 
 import com.octopuz.selectionservice.annotation.LogSelection;
+import com.octopuz.selectionservice.context.UserContext;
 import com.octopuz.selectionservice.dto.SelectionRequest;
 import com.octopuz.selectionservice.dto.SelectionResponse;
 import com.octopuz.selectionservice.producer.LogMessageProducer;
@@ -20,10 +21,9 @@ public class SelectionLogAspect {
 
     @Autowired
     private LogMessageProducer logMessageProducer;
-    
+
     @Around("@annotation(logSelection)")
     public Object around(ProceedingJoinPoint joinPoint, LogSelection logSelection) throws Throwable {
-        // 执行方法
         Object result = joinPoint.proceed();
 
         if (result instanceof SelectionResponse) {
@@ -33,10 +33,11 @@ public class SelectionLogAspect {
                 for (Object arg : args) {
                     if (arg instanceof SelectionRequest) {
                         SelectionRequest request = (SelectionRequest) arg;
+                        String operator = UserContext.getOperator();
                         logMessageProducer.sendLogMessage(
                                 request.getStudentNo(),
                                 request.getCourseNo(),
-                                request.getStudentNo(),
+                                operator,
                                 logSelection.action()
                         );
                         break;

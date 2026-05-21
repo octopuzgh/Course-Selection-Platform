@@ -1,9 +1,9 @@
-# 学生选课系统 - 高并发选课 + 实时统计 + 离线分析
+# 课程选课数据平台 - 高并发选课 + 实时统计 + 离线分析
 
 <p align="center">
   <img src="https://img.shields.io/badge/Spring%20Boot-3.5.14-brightgreen" alt="Spring Boot">
-  <img src="https://img.shields.io/badge/Spark-4.1.1-orange" alt="Spark">
   <img src="https://img.shields.io/badge/PySpark-4.1.1-orange" alt="PySpark">
+  <img src="https://img.shields.io/badge/Spark-3.5.5-orange" alt="Spark">
   <img src="https://img.shields.io/badge/Kafka-3.7.0-black" alt="Kafka">
   <img src="https://img.shields.io/badge/Redis-6.x-red" alt="Redis">
   <img src="https://img.shields.io/badge/Redisson-3.24.3-red" alt="Redisson">
@@ -28,12 +28,13 @@
 
 | 类别 | 技术 | 版本 | 用途 |
 |:----|:----|:----|:----|
+| 前端 | HTML + CSS + JavaScript | - | 静态页面，选课界面 |
 | 微服务框架 | Spring Boot | 3.5.14 | 8080/8081/8082 三个独立服务 |
 | ORM | MyBatis-Plus | 3.5.15 | 数据库操作 |
 | 分布式锁 | Redisson | 3.24.3 | 选课并发控制 |
 | 缓存 | Redis | 6.x | 库存、排行榜、已选标记 |
 | 消息队列 | Kafka | 3.7.0 | 异步解耦、实时流数据源 |
-| 实时计算 | Spark Structured Streaming | 4.1.1 | 消费 Kafka 维护 Redis 统计 |
+| 实时计算 | Spark Structured Streaming | 4.1.1 (内核 3.5.5) | 消费 Kafka 维护 Redis 统计 |
 | 离线计算 | PySpark | 4.1.1 | 历史报表 ETL |
 | 数据库 | MySQL | 8.0 | 持久化存储 |
 | API 文档 | Knife4j | - | 接口文档自动生成 |
@@ -93,6 +94,7 @@
 
 | 服务 | 端口 | 职责 | 数据层 |
 |:-----|:-----|:-----|:-------|
+| frontend | 8088 | 静态页面，展示课程列表、选课退课、实时统计 | - |
 | basic-service | 8080 | 课程/学生/用户 CRUD、选课记录持久化 | MySQL |
 | selection-service | 8081 | 选课/退课核心业务、Redis 库存与排行榜 | Redis |
 | statistics-service | 8082 | 实时统计 + 历史统计查询 | Redis + MySQL |
@@ -129,18 +131,16 @@
 
 ### 数据一致性保证
 
-```
-1. 唯一索引约束
-   ├── selection_record: UNIQUE(student_no, course_no)
-   └── selection_log: UNIQUE(student_no, course_no, action, operate_time)
+1. **数据库唯一索引**
+   - `selection_record` 表通过 `UNIQUE(student_no, course_no, status)` 防止同一学生重复选同一门课
 
-2. Kafka 消费端幂等
-   ├── try-catch 捕获 DuplicateKeyException
-   └── 手动 ack 跳过重复消息
+2. **Kafka 消费端幂等**
+   - 消费者启用手动提交 offset（`enable.auto.commit=false`）
+   - 消费成功后再提交，失败时自动重试
+   - 结合唯一索引跳过重复写入（`DuplicateKeyException` 不中断消费）
 
-3. 生产者幂等性
-   └── enable.idempotence: true
-```
+3. **生产者幂等**
+   - `enable.idempotence=true`，避免网络重试导致消息重复写入
 
 ---
 
@@ -148,14 +148,15 @@
 
 ### 环境要求
 
-| 组件 | 版本要求 |
-|:-----|:---------|
-| JDK | 17+ |
-| MySQL | 8.0+ |
-| Redis | 6.x+ |
-| Kafka | 3.x |
-| Scala | 2.13+ |
-| Python | 3.8+ |
+| 组件 | 版本 | 用途 |
+|:-----|:-----|:-----|
+| JDK | 17+ | Spring Boot 微服务运行 |
+| MySQL | 8.0+ | 业务数据持久化 |
+| Redis | 6.x+ | 缓存、分布式锁、排行榜 |
+| Kafka | 3.7.0 | 异步消息、实时数据源 |
+| Python | 3.8+ | PySpark 离线批处理 |
+| Spark | 3.5.5 | 流处理与批处理引擎 |
+| Scala | 2.13+ | Spark Structured Streaming 编译（仅开发） |
 
 ### 1. 配置环境变量
 
@@ -198,14 +199,18 @@ SPARK_EXECUTOR_MEMORY=1g
 ==========================================
     智能选课平台 - 服务启动脚本
 ==========================================
-1. 启动 basic-service (8080)
-2. 启动 selection-service (8081)
-3. 启动 statistics-service (8082)
-4. 启动 Spark Streaming (实时统计)
-5. 运行 PySpark 每日统计
-6. 运行 PySpark 课程历史统计
-7. 一键启动所有 Spring Boot 服务
-8. 退出
+[S] 启动所有服务
+[1] basic-service (8080)
+[2] selection-service (8081)
+[3] statistics-service (8082)
+[4] 前端 (8088)
+-----------------------------------------
+[5] Spark Streaming (实时统计)
+[6] PySpark 每日统计
+[7] PySpark 课程历史统计
+-----------------------------------------
+[K] 关闭所有服务
+[Q] 退出
 ==========================================
 ```
 
@@ -236,6 +241,10 @@ sudo crontab -e
 
 ---
 
+## 🌐 前端
+
+详见 [fronted/README.md](fronted/README.md)
+
 ## 📁 项目文档
 
 | 文档 | 说明 |
@@ -243,6 +252,22 @@ sudo crontab -e
 | [架构文档](./docs/architecture.md) | 完整架构、各模块详解、数据流 |
 | [API 文档](./docs/api.md) | 8080/8081/8082 所有接口 |
 | [系统设计](./docs/design.md) | Redis Key、MySQL 表、Kafka Topic 设计 |
+
+## 📁 项目结构
+
+```
+select-platform/
+├── basic-service/          # 基础服务 (8080) - 学生/课程/用户 CRUD
+├── selection-service/      # 选课服务 (8081) - 选课/退课核心业务
+├── statistics-service/    # 统计服务 (8082) - 实时/离线统计查询
+├── spark-streaming/       # Spark Streaming 实时统计
+├── spark-pyspark/         # PySpark 离线批处理
+├── fronted/               # 前端静态页面
+├── data-import/           # 数据导入脚本
+├── docs/                  # 项目文档
+├── run.sh                 # Linux 服务启动脚本
+└── run-local.bat          # Windows 本地启动脚本
+```
 
 
 ## 📄 许可证
