@@ -4,14 +4,18 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.octopuz.selectionservice.client.BasicServiceClient;
+import com.octopuz.selectionservice.entity.SelectionLog;
+import com.octopuz.selectionservice.mapper.SelectionLogMapper;
 import com.octopuz.selectionservice.service.interf.RankingService;
 import com.octopuz.selectionservice.service.interf.StockService;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 
@@ -27,6 +31,10 @@ public class CourseStockInitializer implements CommandLineRunner {
     private RankingService rankingService;
     @Autowired
     private BasicServiceClient basicServiceClient;
+    @Autowired
+    private SelectionLogMapper selectionLogMapper;
+    @Autowired
+    private StringRedisTemplate redisTemplate;
 
     @Value("${REDIS_HOST:localhost}")
     private String redisHost;
@@ -36,6 +44,8 @@ public class CourseStockInitializer implements CommandLineRunner {
 
     @Value("${REDIS_DATABASE:0}")
     private int redisDatabase;
+
+    private static final String STATS_TOTAL_KEY = "stats:total";
 
     @PostConstruct
     public void init() {
@@ -86,8 +96,23 @@ public class CourseStockInitializer implements CommandLineRunner {
                 }
             }
             log.info("课程库存初始化完成 (Redis数据库: {})", redisDatabase);
+
+            initStatsTotal();
         } catch (Exception e) {
             log.error("课程库存初始化失败", e);
+        }
+    }
+
+    private void initStatsTotal() {
+        String current = redisTemplate.opsForValue().get(STATS_TOTAL_KEY);
+        if (current == null) {
+            long totalSelections = selectionLogMapper.selectCount(
+                new QueryWrapper<SelectionLog>().eq("action", "SELECT")
+            );
+            redisTemplate.opsForValue().set(STATS_TOTAL_KEY, String.valueOf(totalSelections));
+            log.info("[INIT] stats:total initialized from selection_log, value={}", totalSelections);
+        } else {
+            log.info("[INIT] stats:total already exists in Redis, value={}", current);
         }
     }
 }

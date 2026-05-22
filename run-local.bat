@@ -51,7 +51,7 @@ echo statistics-service started
 goto show_menu
 
 :start_frontend
-start "frontend" cmd /k "cd /d %PROJECT_DIR%\fronted && python -m http.server %FRONTEND_PORT%"
+start "frontend" cmd /k "cd /d %PROJECT_DIR%\frontend && python -m http.server %FRONTEND_PORT%"
 echo frontend started
 goto show_menu
 
@@ -60,7 +60,7 @@ echo Starting all services...
 start "basic-service" cmd /k "cd /d %PROJECT_DIR%\basic-service && call mvnw.cmd spring-boot:run"
 start "selection-service" cmd /k "cd /d %PROJECT_DIR%\selection-service && call mvnw.cmd spring-boot:run"
 start "statistics-service" cmd /k "cd /d %PROJECT_DIR%\statistics-service && call mvnw.cmd spring-boot:run"
-start "frontend" cmd /k "cd /d %PROJECT_DIR%\fronted && python -m http.server %FRONTEND_PORT%"
+start "frontend" cmd /k "cd /d %PROJECT_DIR%\frontend && python -m http.server %FRONTEND_PORT%"
 echo All services started
 echo Frontend: http://localhost:%FRONTEND_PORT%
 goto show_menu

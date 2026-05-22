@@ -24,10 +24,14 @@ public class SelectedRecordServiceImpl implements SelectedRecordService {
     @Override
     public boolean isSelected(String studentNo, String courseNo) {
         String key = SELECTED_KEY_PREFIX + studentNo + ":" + courseNo;
-        if (Boolean.TRUE.equals(redisTemplate.hasKey(key))) {
+        Boolean exists = redisTemplate.hasKey(key);
+        log.info("[DEBUG] isSelected studentNo={}, courseNo={}, key={}, redisExists={}", studentNo, courseNo, key, exists);
+        if (Boolean.TRUE.equals(exists)) {
             return true;
         }
-        return basicServiceClient.hasSelectedCourse(studentNo, courseNo);
+        boolean mysqlResult = basicServiceClient.hasSelectedCourse(studentNo, courseNo);
+        log.info("[DEBUG] isSelected MySQL result={}", mysqlResult);
+        return mysqlResult;
     }
 
     @Override

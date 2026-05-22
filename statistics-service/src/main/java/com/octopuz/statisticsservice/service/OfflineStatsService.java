@@ -42,8 +42,10 @@ public class OfflineStatsService {
     }
 
     public List<DailyStats> getDailyStats(LocalDate start, LocalDate end) {
+        String startStr = start.toString();
+        String endStr = end.toString();
         LambdaQueryWrapper<DailyStats> wrapper = new LambdaQueryWrapper<>();
-        wrapper.between(DailyStats::getStatDate, start, end)
+        wrapper.between(DailyStats::getStatDate, startStr, endStr)
                 .orderByAsc(DailyStats::getStatDate);
         return dailyStatsMapper.selectList(wrapper);
     }
