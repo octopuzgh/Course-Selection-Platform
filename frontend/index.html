@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>选课平台前端</title>
   <link rel="stylesheet" href="styles.css" />
-  <meta name="description" content="简单的学生选课前端，调用 basic-service 8080 端口" />
+  <meta name="description" content="学生选课前端 - 支持多服务架构 (8080/8081/8082)" />
 </head>
 <body>
   <header>
@@ -104,9 +104,19 @@
   </main>
 
   <footer>
-    <small>本前端为演示用途，调用后端服务：8080(basic-service)</small>
+    <small>本前端为演示用途，调用后端服务：8080(basic-service) / 8081(selection-service) / 8082(statistics-service)</small>
   </footer>
 
+  <!-- 
+    环境变量配置 - 在 app.js 加载前设置
+    开发环境: window.BACKEND_HOST = '192.168.137.1'
+    生产环境: window.BACKEND_HOST = 'localhost' (默认)
+  -->
+  <script>
+    // 可以通过修改这里的值来切换环境
+    window.BACKEND_HOST = '192.168.137.1'  // 测试环境
+    // window.BACKEND_HOST = 'localhost'  // 生产环境（默认）
+  </script>
   <script src="app.js"></script>
 </body>
 </html>
