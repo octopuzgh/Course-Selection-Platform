@@ -16,6 +16,7 @@ public class StockServiceImpl implements StockService {
     private StringRedisTemplate redisTemplate;
     private static final String STOCK_KEY_PREFIX = "course:stock:";
     private static final String CAPACITY_KEY_PREFIX = "course:capacity:";
+    private static final String STATS_TOTAL_KEY = "stats:total";
 
     @Override
     public boolean checkStock(String courseNo) {
@@ -34,6 +35,7 @@ public class StockServiceImpl implements StockService {
             }
             return false;
         }
+        redisTemplate.opsForValue().increment(STATS_TOTAL_KEY);
         log.debug("课程{}库存扣减成功，剩余: {}", courseNo, result);
         return true;
     }
@@ -42,6 +44,7 @@ public class StockServiceImpl implements StockService {
     public void restoreStock(String courseNo) {
         String key = STOCK_KEY_PREFIX + courseNo;
         redisTemplate.opsForValue().increment(key);
+        redisTemplate.opsForValue().decrement(STATS_TOTAL_KEY);
         log.debug("课程{}库存恢复成功", courseNo);
     }
 

@@ -41,9 +41,15 @@ public class BasicServiceClient {
     public boolean hasSelectedCourse(String studentNo, String courseNo) {
         try {
             String url = basicServiceUrl + "/selections/check?studentNo=" + studentNo + "&courseNo=" + courseNo;
-            Boolean result = restTemplate.getForObject(url, Boolean.class);
-            return result != null && result;
+            String response = restTemplate.getForObject(url, String.class);
+            log.info("[DEBUG] hasSelectedCourse HTTP response: {}", response);
+            if (response == null) {
+                return false;
+            }
+            com.alibaba.fastjson.JSONObject json = com.alibaba.fastjson.JSON.parseObject(response);
+            return json.getBoolean("data") != null && json.getBoolean("data");
         } catch (Exception e) {
+            log.error("[DEBUG] hasSelectedCourse HTTP failed: {}", e.getMessage());
             return false;
         }
     }

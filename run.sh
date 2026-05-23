@@ -46,7 +46,7 @@ start_statistics() {
 }
 
 start_frontend() {
-    cd "$PROJECT_DIR/fronted"
+    cd "$PROJECT_DIR/frontend"
     nohup python3 -m http.server 8088 > ../logs/frontend.log 2>&1 &
     echo "frontend started (PID: $!)"
 }
