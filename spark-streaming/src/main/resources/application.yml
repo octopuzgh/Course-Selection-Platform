@@ -1,19 +1,20 @@
 # Kafka Configuration
 kafka:
-  bootstrap-servers: ${KAFKA_HOST}:${KAFKA_PORT}
-  topic: ${KAFKA_TOPIC:selection-topic}
-  group-id: ${KAFKA_GROUP_ID:stats-consumer-group}
+  bootstrap-servers: 192.168.152.131:9092
+  topic: selection-topic
+  group-id: stats-consumer-group
 
 # Redis Configuration
 redis:
-  host: ${REDIS_HOST}
-  port: ${REDIS_PORT}
-  database: ${REDIS_DATABASE}
-  password: ${REDIS_PASSWORD}
+  host: 192.168.152.131
+  port: 6379
+  username: octopuz_remote
+  password: Octopuz@123
+  database: 1
 
 # Spark Configuration
 spark:
-  master: ${SPARK_MASTER:spark://localhost:7077}
+  master: local[*]
   app-name: RealtimeSelectionStats
-  driver-memory: ${SPARK_DRIVER_MEMORY:512m}
-  executor-memory: ${SPARK_EXECUTOR_MEMORY:1g}
+  driver-memory: 512m
+  executor-memory: 1g

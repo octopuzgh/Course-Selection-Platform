@@ -6,6 +6,17 @@
 
 PROJECT_DIR="/mnt/hgfs/share_files/select-platform"
 
+if [ -f "$PROJECT_DIR/.env" ]; then
+    set -a
+    source "$PROJECT_DIR/.env"
+    set +a
+    echo "Loaded environment variables from .env"
+else
+    echo "Warning: .env file not found, using defaults"
+    export SPARK_MASTER="spark://192.168.152.131:7077"
+    export SPARK_DRIVER_MEMORY="512m"
+fi
+
 show_menu() {
     echo ""
     echo "=========================================="
@@ -52,14 +63,35 @@ start_frontend() {
 }
 
 start_spark_streaming() {
-    echo "Starting Spark Streaming..."
+    echo "Building jar..."
     cd "$PROJECT_DIR/spark-streaming"
-    nohup mvn clean package > ../logs/spark-build.log 2>&1 &
-    echo "Spark Streaming build started"
-    sleep 5
-    nohup spark-submit --master ${SPARK_MASTER} target/spark-streaming-stats-1.0-SNAPSHOT.jar > ../logs/spark-streaming.log 2>&1 &
+    mvn clean package -DskipTests > ../logs/spark-build.log 2>&1
+
+    if [ $? -ne 0 ]; then
+        echo "Build failed!"
+        cat ../logs/spark-build.log
+        return 1
+    fi
+
+    echo "Starting Spark Streaming..."
+    JAR_PATH=$(find target -name "spark-streaming-stats-*.jar" -not -name "*sources*" -not -name "original-*" | head -1)
+
+    if [ -z "$JAR_PATH" ]; then
+        echo "Error: JAR file not found!"
+        return 1
+    fi
+
+    echo "Using JAR: $JAR_PATH"
+    nohup spark-submit \
+      --master ${SPARK_MASTER} \
+      --class com.octopuz.spark.StreamingStatsApplication \
+      --driver-memory ${SPARK_DRIVER_MEMORY:-512m} \
+      --conf "spark.sql.streaming.checkpointLocation=/tmp/spark-checkpoint" \
+      "$JAR_PATH" > ../logs/spark-stream.log 2>&1 &
+    echo $! > ../logs/spark-streaming.pid
     echo "Spark Streaming started (PID: $!)"
 }
+
 
 start_pyspark_daily() {
     echo "Running PySpark daily stats..."

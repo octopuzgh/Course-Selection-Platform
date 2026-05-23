@@ -1,46 +1,77 @@
 package com.octopuz.spark
 
-import com.alibaba.fastjson.JSON
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{col, from_json}
-import org.apache.spark.sql.types.{StringType, StructField, StructType}
-import redis.clients.jedis.Jedis
+import org.apache.spark.sql.streaming.Trigger
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.functions._
 import org.yaml.snakeyaml.Yaml
+import redis.clients.jedis.Jedis
 
-import java.io.FileInputStream
-import java.util
+import java.time.LocalDate
+import scala.collection.JavaConverters._
+import scala.util.{Failure, Success, Try}
 
 object StreamingStatsApplication {
 
-  case class SelectionMessage(studentNo: String, courseNo: String, `type`: String)
-
-  val DAILY_COUNT_KEY = "stats:daily:count"
-  val DAILY_STUDENTS_KEY = "stats:daily:students"
-  val COURSE_POPULARITY_KEY_PREFIX = "course:popularity:"
-  val STATS_TOTAL_KEY = "stats:total"
-  val STATS_TODAY_COUNT_KEY = "stats:today:count"
-  val STATS_TODAY_STUDENTS_KEY = "stats:today:students"
-
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession.builder
+    val spark = SparkSession.builder()
       .appName("RealtimeSelectionStats")
+      .master("local[*]")
+      .config("spark.sql.shuffle.partitions", "2")
       .getOrCreate()
 
     import spark.implicits._
 
+    // 从 classpath 读取配置
     val yaml = new Yaml()
-    val config = yaml.load(new FileInputStream("src/main/resources/application.yml"))
-      .asInstanceOf[LinkedHashMap[String, LinkedHashMap[String, Any]]]
+    val is = this.getClass.getResourceAsStream("/application.yml")
+    if (is == null) {
+      println("Error: application.yml not found in classpath")
+      sys.exit(1)
+    }
 
-    val kafkaConfig = config.get("kafka")
-    val kafkaBrokers = kafkaConfig.get("bootstrap-servers").asInstanceOf[String]
-    val kafkaTopic = kafkaConfig.get("topic").asInstanceOf[String]
-    val kafkaGroupId = kafkaConfig.get("group-id").asInstanceOf[String]
+    val config = try {
+      yaml.load(is).asInstanceOf[java.util.LinkedHashMap[String, java.util.LinkedHashMap[String, Any]]]
+    } catch {
+      case e: Exception =>
+        println(s"Error loading configuration: ${e.getMessage}")
+        sys.exit(1)
+    } finally {
+      try is.close() catch { case _: Exception => }
+    }
 
-    val redisConfig = config.get("redis")
-    val redisHost = redisConfig.get("host").asInstanceOf[String]
-    val redisPort = redisConfig.get("port").asInstanceOf[Int]
-    val redisDb = redisConfig.get("database").asInstanceOf[Int]
+    // 安全获取配置项
+    val kafkaConfig = config.getOrDefault("kafka", new java.util.LinkedHashMap[String, Any]())
+    val redisConfig = config.getOrDefault("redis", new java.util.LinkedHashMap[String, Any]())
+
+    val kafkaBrokers = kafkaConfig.getOrDefault("bootstrap-servers", "localhost:9092").asInstanceOf[String]
+    val kafkaTopic = kafkaConfig.getOrDefault("topic", "selection-events").asInstanceOf[String]
+    val kafkaGroupId = kafkaConfig.getOrDefault("group-id", "spark-streaming-group").asInstanceOf[String]
+    val redisHost = redisConfig.getOrDefault("host", "localhost").asInstanceOf[String]
+    val redisPort = redisConfig.getOrDefault("port", 6379) match {
+      case p: Int => p
+      case p: String => p.toInt
+      case _ => 6379
+    }
+
+    val redisDb = redisConfig.getOrDefault("database", 0) match {
+      case d: Int => d
+      case d: String => d.toInt
+      case _ => 0
+    }
+
+    val redisUsername = redisConfig.getOrDefault("username", "default") match {
+      case u: String => u
+      case _ => "default"
+    }
+
+    val redisPassword = redisConfig.getOrDefault("password", "") match {
+      case p: String => p
+      case _ => ""
+    }
+
+    // 从环境变量或默认值获取 checkpoint 路径
+    val checkpointPath = System.getenv().getOrDefault("SPARK_CHECKPOINT_PATH", "/tmp/spark/checkpoint/realtime_stats")
 
     val schema = StructType(Seq(
       StructField("studentNo", StringType),
@@ -60,49 +91,94 @@ object StreamingStatsApplication {
     val parsed = df.selectExpr("CAST(value AS STRING) as json_str")
       .select(from_json(col("json_str"), schema).alias("data"))
       .select("data.*")
+      .filter(col("studentNo").isNotNull && col("courseNo").isNotNull && col("type").isNotNull)
 
     val query = parsed.writeStream
-      .foreachBatch { (batchDF, epochId) =>
-        val jedis = new Jedis(redisHost, redisPort, 3000)
-        jedis.select(redisDb)
+      .foreachBatch { (batchDF: org.apache.spark.sql.Dataset[org.apache.spark.sql.Row], epochId: Long) =>
+        batchDF.foreachPartition { (partition: Iterator[org.apache.spark.sql.Row]) =>
+          var jedis: Jedis = null
+          try {
+            jedis = new Jedis(redisHost, redisPort)
+            if (redisPassword.nonEmpty) {
+              jedis.auth(redisUsername, redisPassword)
+            }
+            jedis.select(redisDb)
+            val today = LocalDate.now().toString
 
-        val today = LocalDate.now().toString
-        val dailyCountKey = DAILY_COUNT_KEY + ":" + today
-        val dailyStudentsKey = DAILY_STUDENTS_KEY + ":" + today
+            // 使用 pipeline 提高性能
+            val pipeline = jedis.pipelined()
 
-        val messages = batchDF.as[SelectionMessage].collect()
-        messages.foreach { msg =>
-          if (msg.`type` == "SELECT") {
-            jedis.incr(dailyCountKey)
-            jedis.sadd(dailyStudentsKey, msg.studentNo)
-            jedis.expire(dailyCountKey, 172800)
-            jedis.expire(dailyStudentsKey, 172800)
+            partition.foreach { (row: org.apache.spark.sql.Row) =>
+              try {
+                val studentNo = row.getAs[String]("studentNo")
+                val courseNo = row.getAs[String]("courseNo")
+                val msgType = row.getAs[String]("type")
 
-            jedis.zincrby(COURSE_POPULARITY_KEY_PREFIX + today, 1, msg.courseNo)
-            jedis.expire(COURSE_POPULARITY_KEY_PREFIX + today, 172800)
+                if (msgType != null) {
+                  if (msgType == "SELECT") {
+                    // 每日统计
+                    pipeline.incr(s"stats:daily:count:$today")
+                    pipeline.sadd(s"stats:daily:students:$today", studentNo)
+                    pipeline.expire(s"stats:daily:count:$today", 172800)
+                    pipeline.expire(s"stats:daily:students:$today", 172800)
 
-            jedis.incr(STATS_TOTAL_KEY)
-            jedis.incr(STATS_TODAY_COUNT_KEY)
-            jedis.sadd(STATS_TODAY_STUDENTS_KEY, msg.studentNo)
+                    // 今日排行榜
+                    pipeline.zincrby(s"course:popularity:$today", 1, courseNo)
+                    pipeline.expire(s"course:popularity:$today", 172800)
 
-          } else if (msg.`type` == "DROP") {
-            jedis.decr(dailyCountKey)
-            jedis.srem(dailyStudentsKey, msg.studentNo)
+                    // 累计统计
+                    pipeline.incr("stats:total")
+                    pipeline.incr("stats:today:count")
+                    pipeline.sadd("stats:today:students", studentNo)
 
-            jedis.zincrby(COURSE_POPULARITY_KEY_PREFIX + today, -1, msg.courseNo)
+                  } else if (msgType == "DROP") {
+                    // 每日统计（减少计数并移除学生）
+                    pipeline.decr(s"stats:daily:count:$today")
+                    pipeline.srem(s"stats:daily:students:$today", studentNo)
+                    pipeline.zincrby(s"course:popularity:$today", -1, courseNo)
 
-            jedis.decr(STATS_TOTAL_KEY)
-            jedis.decr(STATS_TODAY_COUNT_KEY)
-            jedis.srem(STATS_TODAY_STUDENTS_KEY, msg.studentNo)
+                    // 累计统计（减少计数并移除学生）
+                    pipeline.decr("stats:total")
+                    pipeline.decr("stats:today:count")
+                    pipeline.srem("stats:today:students", studentNo)
+                  }
+                }
+              } catch {
+                case e: Exception =>
+                  println(s"Error processing record: ${e.getMessage}")
+                  e.printStackTrace()
+              }
+            }
+
+            // 执行所有管道命令
+            pipeline.sync()
+
+          } catch {
+            case e: Exception =>
+              println(s"Redis connection error: ${e.getMessage}")
+              e.printStackTrace()
+          } finally {
+            if (jedis != null) {
+              try {
+                jedis.close()
+              } catch {
+                case e: Exception =>
+                  println(s"Error closing Redis connection: ${e.getMessage}")
+              }
+            }
           }
         }
-
-        jedis.close()
-        println(s"[Batch $epochId] Processed ${messages.length} messages for date: $today")
+        println(s"[Batch $epochId] processed at ${java.time.LocalDateTime.now()}")
       }
-      .option("checkpointLocation", "/tmp/spark/checkpoint/realtime_stats")
+      .option("checkpointLocation", checkpointPath)
       .outputMode("append")
       .start()
+
+    // 添加关闭钩子
+    sys.addShutdownHook({
+      println("Shutting down Spark Streaming query...")
+      query.stop()
+    })
 
     query.awaitTermination()
   }
