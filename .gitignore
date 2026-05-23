@@ -2,3 +2,8 @@
 .vscode
 .idea
 .metals
+logs/*.log
+.idea/CoolRequestSetting.xml
+.idea/select-platform.iml
+.idea/CoolRequestSetting.xml
+logs/spark-streaming.pid
