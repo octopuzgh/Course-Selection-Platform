@@ -43,30 +43,45 @@
 
     <section id="main-app" class="hidden">
       <nav>
-        <button id="nav-courses" class="active">课程列表</button>
-        <button id="nav-stats">统计</button>
+        <button id="nav-course-display" class="active">课程展示</button>
+        <button id="nav-course-selection">退选课</button>
+        <button id="nav-students">学生列表</button>
         <button id="nav-admin" class="hidden">管理面板</button>
       </nav>
 
-      <section id="courses-view" class="view">
+      <section id="course-display-view" class="view">
         <div class="controls">
-          <label>学号: <input id="studentNo" placeholder="例如 2024001" /></label>
-          <button id="refresh-courses">刷新课程</button>
+          <button id="refresh-course-display">刷新课程</button>
         </div>
-        <div id="courses"></div>
+        <div id="course-display"></div>
+        <div class="pagination" id="course-display-pagination"></div>
       </section>
 
-      <section id="stats-view" class="view hidden">
-        <h2>实时统计</h2>
-        <div id="top10"></div>
-        <div class="stats-row">
-          <button id="refresh-top10">刷新排行</button>
-          <button id="load-total">加载累计选课次数</button>
-          <div id="total-count" class="muted"></div>
+      <section id="course-selection-view" class="view hidden">
+        <div class="controls">
+          <label>学号: <input id="selection-student-no" placeholder="例如 2024001" /></label>
+          <button id="refresh-course-selection">刷新课程</button>
+          <span id="service-status-indicator" class="service-status"></span>
         </div>
+        <div class="search-controls">
+          <label>课程号: <input id="search-course-no" placeholder="搜索课程号" /></label>
+          <label>课程名称: <input id="search-course-name" placeholder="搜索课程名称" /></label>
+          <label>教师: <input id="search-teacher" placeholder="搜索教师" /></label>
+          <button id="search-course-btn">搜索</button>
+          <button id="clear-search-btn">清除</button>
+        </div>
+        <div id="course-selection"></div>
+        <div class="pagination" id="course-selection-pagination"></div>
       </section>
 
-          <section id="admin-view" class="view hidden">
+      <section id="students-view" class="view hidden">
+        <h2>学生列表</h2>
+        <button id="refresh-students-list" class="action">刷新学生列表</button>
+        <div id="students-list-container"></div>
+        <div class="pagination" id="students-list-pagination"></div>
+      </section>
+
+      <section id="admin-view" class="view hidden">
         <h2>管理面板</h2>
         
         <div class="admin-section">
@@ -83,7 +98,11 @@
             <input id="delete-course-no" placeholder="要删除的课程号" />
             <button id="admin-delete-course" class="action danger">删除课程</button>
           </div>
-          <div id="admin-courses-list" class="grid"></div>
+          <div class="search-course-form">
+            <input id="admin-search-course-no" placeholder="搜索课程号" />
+            <button id="admin-search-course-btn" class="action">搜索课程</button>
+          </div>
+          <div id="admin-search-course-result"></div>
         </div>
 
         <div class="admin-section">
@@ -95,8 +114,15 @@
             <input id="admin-student-grade" placeholder="年级" />
             <button id="admin-add-student" class="action success">添加学生</button>
           </div>
-          <button id="refresh-students" class="action">刷新学生列表</button>
-          <div id="students-list"></div>
+          <div class="delete-student-form">
+            <input id="delete-student-no" placeholder="要删除的学号" />
+            <button id="admin-delete-student" class="action danger">删除学生</button>
+          </div>
+          <div class="search-student-form">
+            <input id="admin-search-student-no" placeholder="搜索学号" />
+            <button id="admin-search-student-btn" class="action">搜索学生</button>
+          </div>
+          <div id="admin-search-student-result"></div>
         </div>
       </section>
 
