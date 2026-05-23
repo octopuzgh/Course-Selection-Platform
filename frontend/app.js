@@ -1,10 +1,21 @@
-const BACKEND_BASIC = 'http://localhost:8080'
+// 服务地址配置 - 通过环境变量切换
+// 开发环境: 192.168.137.1, 生产环境: localhost
+const BACKEND_HOST = window.BACKEND_HOST || 'localhost'
 
-const API = BACKEND_BASIC
-const API_SELECTION = `${API}/selections`
-const API_COURSES = `${API}/courses`
-const API_STUDENTS = `${API}/students`
-const API_USERS = `${API}/users`
+// 三个微服务的端口配置
+const BASIC_SERVICE_PORT = 8080      // 基础服务：用户、课程、学生管理
+const SELECTION_SERVICE_PORT = 8081  // 选课服务：选退课操作（高并发）
+const STATISTICS_SERVICE_PORT = 8082 // 统计服务：实时排行榜、统计数据
+
+// 服务基础 URL
+const BASIC_SERVICE_URL = `http://${BACKEND_HOST}:${BASIC_SERVICE_PORT}`
+const SELECTION_SERVICE_URL = `http://${BACKEND_HOST}:${SELECTION_SERVICE_PORT}/api/selection`
+const STATISTICS_SERVICE_URL = `http://${BACKEND_HOST}:${STATISTICS_SERVICE_PORT}/api/realtime`
+
+// API 路径定义
+const API_USERS = `${BASIC_SERVICE_URL}/users`
+const API_STUDENTS = `${BASIC_SERVICE_URL}/students`
+const API_COURSES = `${BASIC_SERVICE_URL}/courses`
 
 const $ = id=>document.getElementById(id)
 
@@ -148,15 +159,31 @@ async function fetchCourses(){
 async function checkSelected(studentNo, courseNo){
   if(!studentNo) return false
   try{
-    const url = new URL(API_SELECTION+'/check')
+    // 优先使用 statistics-service (8082) 的实时检查接口
+    const url = new URL(`${STATISTICS_SERVICE_URL}/check/selected`)
     url.searchParams.set('studentNo', studentNo)
     url.searchParams.set('courseNo', courseNo)
     const res = await fetch(url, {
       headers: getAuthHeaders()
     })
-    const result = await res.json()
-    return result.code === 200 && result.data === true
-  }catch(e){return false}
+    // statistics-service 直接返回 boolean，不是 Result 包装
+    return await res.json()
+  }catch(e){
+    // 降级方案：如果 8082 不可用，使用 basic-service (8080)
+    console.warn('statistics-service 不可用，降级到 basic-service')
+    try{
+      const url = new URL(`${BASIC_SERVICE_URL}/selections/check`)
+      url.searchParams.set('studentNo', studentNo)
+      url.searchParams.set('courseNo', courseNo)
+      const res = await fetch(url, {
+        headers: getAuthHeaders()
+      })
+      const result = await res.json()
+      return result.code === 200 && result.data === true
+    }catch(err){
+      return false
+    }
+  }
 }
 
 async function renderCourses(list){
@@ -255,59 +282,95 @@ async function renderCourses(list){
 async function selectCourse(studentNo, courseNo){
   if(!studentNo){ alert('请先输入学号'); return }
   try{
-    const res = await fetch(API_SELECTION+'/submit', {
+    // 优先使用 selection-service (8081) 的选课接口
+    const res = await fetch(`${SELECTION_SERVICE_URL}/select`, {
       method:'POST',
-      headers: getAuthHeaders(),
+      headers: {
+        ...getAuthHeaders(),
+        'X-Operator-Id': currentUser // 添加操作人ID
+      },
       body: JSON.stringify({studentNo,courseNo}),
     })
     const result = await res.json()
-    alert(result.message || (result.code===200 ? '成功' : '失败'))
+    // selection-service 返回格式: {success, code, message}
+    alert(result.message || (result.success ? '选课成功' : '选课失败'))
     await fetchCourses()
-  }catch(e){ alert('选课失败：'+e) }
+  }catch(e){ 
+    // 降级方案：如果 8081 不可用，使用 basic-service (8080)
+    console.warn('selection-service 不可用，降级到 basic-service')
+    try{
+      const res = await fetch(`${BASIC_SERVICE_URL}/selections/submit`, {
+        method:'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({studentNo,courseNo}),
+      })
+      const result = await res.json()
+      alert(result.message || (result.code===200 ? '成功' : '失败'))
+      await fetchCourses()
+    }catch(err){ 
+      alert('选课失败：'+err) 
+    }
+  }
 }
 
 async function dropCourse(studentNo, courseNo){
   if(!studentNo){ alert('请先输入学号'); return }
   try{
-    const res = await fetch(API_SELECTION+'/drop', {
+    // 优先使用 selection-service (8081) 的退课接口
+    const res = await fetch(`${SELECTION_SERVICE_URL}/drop`, {
       method:'POST',
-      headers: getAuthHeaders(),
+      headers: {
+        ...getAuthHeaders(),
+        'X-Operator-Id': currentUser // 添加操作人ID
+      },
       body: JSON.stringify({studentNo,courseNo}),
     })
     const result = await res.json()
-    alert(result.message || (result.code===200 ? '成功' : '失败'))
+    // selection-service 返回格式: {success, code, message}
+    alert(result.message || (result.success ? '退课成功' : '退课失败'))
     await fetchCourses()
-  }catch(e){ alert('退课失败：'+e) }
+  }catch(e){ 
+    // 降级方案：如果 8081 不可用，使用 basic-service (8080)
+    console.warn('selection-service 不可用，降级到 basic-service')
+    try{
+      const res = await fetch(`${BASIC_SERVICE_URL}/selections/drop`, {
+        method:'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({studentNo,courseNo}),
+      })
+      const result = await res.json()
+      alert(result.message || (result.code===200 ? '成功' : '失败'))
+      await fetchCourses()
+    }catch(err){ 
+      alert('退课失败：'+err) 
+    }
+  }
 }
 
 async function fetchTop10(){
   try{
-    const res = await fetch(API_COURSES, {
+    // 优先使用 statistics-service (8082) 的实时库存充足榜 Top10
+    const res = await fetch(`${STATISTICS_SERVICE_URL}/rank/top10`, {
       headers: getAuthHeaders()
     })
-    const result = await res.json()
     const container = $('top10'); container.innerHTML = ''
     
-    if(result.code === 200 && result.data){
-      const sorted = result.data
-        .filter(c => c.selectedCount > 0)
-        .sort((a, b) => b.selectedCount - a.selectedCount)
-        .slice(0, 10)
-      
-      if(sorted.length === 0){
-        container.innerHTML = '<table class="students-table"><tbody><tr><td style="text-align:center;padding:2rem;color:#95a5a6;">暂无选课数据</td></tr></tbody></table>'
-        return
-      }
-      
+    // statistics-service 直接返回数组，不是 Result 包装
+    const data = await res.json()
+    
+    if(data && data.length > 0){
       // 创建表格
       const table = document.createElement('table')
       table.className = 'students-table'
       table.innerHTML = `
         <thead>
           <tr>
+            <th>排名</th>
             <th>课程号</th>
             <th>课程名称</th>
-            <th>已选次数</th>
+            <th>剩余名额</th>
+            <th>已选人数</th>
+            <th>总容量</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -315,34 +378,105 @@ async function fetchTop10(){
       
       const tbody = table.querySelector('tbody')
       
-      sorted.forEach(item=>{
+      data.forEach(item=>{
         const tr = document.createElement('tr')
         tr.innerHTML = `
+          <td>${item.rank || '-'}</td>
           <td>${item.courseNo}</td>
           <td>${item.courseName || '未知'}</td>
+          <td>${item.remainingCount || 0}</td>
           <td>${item.selectedCount || 0}</td>
+          <td>${item.totalCount || 0}</td>
         `
         tbody.appendChild(tr)
       })
       
       container.appendChild(table)
+    }else{
+      container.innerHTML = '<table class="students-table"><tbody><tr><td style="text-align:center;padding:2rem;color:#95a5a6;">暂无排行数据</td></tr></tbody></table>'
     }
-  }catch(e){$('top10').innerHTML='<table class="students-table"><tbody><tr><td style="text-align:center;padding:2rem;color:#95a5a6;">无法获取排行</td></tr></tbody></table>'}
+  }catch(e){
+    // 降级方案：如果 8082 不可用，使用 basic-service (8080)
+    console.warn('statistics-service 不可用，降级到 basic-service')
+    try{
+      const res = await fetch(API_COURSES, {
+        headers: getAuthHeaders()
+      })
+      const result = await res.json()
+      const container = $('top10'); container.innerHTML = ''
+      
+      if(result.code === 200 && result.data){
+        const sorted = result.data
+          .filter(c => c.selectedCount > 0)
+          .sort((a, b) => b.selectedCount - a.selectedCount)
+          .slice(0, 10)
+        
+        if(sorted.length === 0){
+          container.innerHTML = '<table class="students-table"><tbody><tr><td style="text-align:center;padding:2rem;color:#95a5a6;">暂无选课数据</td></tr></tbody></table>'
+          return
+        }
+        
+        // 创建表格
+        const table = document.createElement('table')
+        table.className = 'students-table'
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>课程号</th>
+              <th>课程名称</th>
+              <th>已选次数</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        `
+        
+        const tbody = table.querySelector('tbody')
+        
+        sorted.forEach(item=>{
+          const tr = document.createElement('tr')
+          tr.innerHTML = `
+            <td>${item.courseNo}</td>
+            <td>${item.courseName || '未知'}</td>
+            <td>${item.selectedCount || 0}</td>
+          `
+          tbody.appendChild(tr)
+        })
+        
+        container.appendChild(table)
+      }
+    }catch(err){
+      $('top10').innerHTML='<table class="students-table"><tbody><tr><td style="text-align:center;padding:2rem;color:#95a5a6;">无法获取排行</td></tr></tbody></table>'
+    }
+  }
 }
 
 async function loadTotal(){
   try{
-    const res = await fetch(API_COURSES, {
+    // 优先使用 statistics-service (8082) 的累计选课总数接口
+    const res = await fetch(`${STATISTICS_SERVICE_URL}/stats/total`, {
       headers: getAuthHeaders()
     })
-    const result = await res.json()
-    if(result.code === 200 && result.data){
-      const total = result.data.reduce((sum, c) => sum + (c.selectedCount || 0), 0)
-      $('total-count').textContent = '累计选课次数：' + total
-    }else{
+    // statistics-service 直接返回 Long 类型数字
+    const total = await res.json()
+    $('total-count').textContent = '累计选课次数：' + total
+  }catch(e){
+    // 降级方案：如果 8082 不可用，使用 basic-service (8080)
+    console.warn('statistics-service 不可用，降级到 basic-service')
+    try{
+      const res = await fetch(API_COURSES, {
+        headers: getAuthHeaders()
+      })
+      const result = await res.json()
+      if(result.code === 200 && result.data){
+        const total = result.data.reduce((sum, c) => sum + (c.selectedCount || 0), 0)
+        $('total-count').textContent = '累计选课次数：' + total
+      }else{
+        $('total-count').textContent = '载入失败'
+      }
+    }catch(err){
       $('total-count').textContent = '载入失败'
     }
-  }catch(e){$('total-count').textContent = '载入失败'}
+  }
 }
 
 async function fetchAllStudents(){
