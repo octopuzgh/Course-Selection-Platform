@@ -128,8 +128,6 @@ object StreamingStatsApplication {
 
                     // 累计统计
                     pipeline.incr("stats:total")
-                    pipeline.incr("stats:today:count")
-                    pipeline.sadd("stats:today:students", studentNo)
 
                   } else if (msgType == "DROP") {
                     // 每日统计（减少计数并移除学生）
@@ -139,8 +137,6 @@ object StreamingStatsApplication {
 
                     // 累计统计（减少计数并移除学生）
                     pipeline.decr("stats:total")
-                    pipeline.decr("stats:today:count")
-                    pipeline.srem("stats:today:students", studentNo)
                   }
                 }
               } catch {

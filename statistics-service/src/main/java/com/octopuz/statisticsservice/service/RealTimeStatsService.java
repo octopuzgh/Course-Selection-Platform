@@ -34,8 +34,6 @@ public class RealTimeStatsService {
     private static final String CAPACITY_KEY_PREFIX = "course:capacity:";
     private static final String SELECTED_KEY_PREFIX = "selected:";
     private static final String STATS_TOTAL_KEY = "stats:total";
-    private static final String STATS_TODAY_COUNT_KEY = "stats:today:count";
-    private static final String STATS_TODAY_STUDENTS_KEY = "stats:today:students";
     private static final String DAILY_COUNT_KEY_PREFIX = "stats:daily:count:";
     private static final String DAILY_STUDENTS_KEY_PREFIX = "stats:daily:students:";
     private static final String COURSE_POPULARITY_KEY_PREFIX = "course:popularity:";
@@ -110,18 +108,6 @@ public class RealTimeStatsService {
         return count != null ? Long.parseLong(count) : 0L;
     }
 
-    public TodayStats getTodayStats() {
-        String countStr = redisTemplate.opsForValue().get(STATS_TODAY_COUNT_KEY);
-        Long totalCount = countStr != null ? Long.parseLong(countStr) : 0L;
-
-        Long uniqueStudents = redisTemplate.opsForSet().size(STATS_TODAY_STUDENTS_KEY);
-
-        return TodayStats.builder()
-                .totalCount(totalCount)
-                .uniqueStudents(uniqueStudents)
-                .build();
-    }
-
     public Integer getRemaining(String courseNo) {
         String key = STOCK_KEY_PREFIX + courseNo;
         String stockStr = redisTemplate.opsForValue().get(key);
@@ -143,6 +129,7 @@ public class RealTimeStatsService {
         Long dailyStudents = redisTemplate.opsForSet().size(studentsKey);
 
         return DailyStatsDTO.builder()
+                .statDate(date)
                 .dailyCount(dailyCount)
                 .dailyStudents(dailyStudents)
                 .build();

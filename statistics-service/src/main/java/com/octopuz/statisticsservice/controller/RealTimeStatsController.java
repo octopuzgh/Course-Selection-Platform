@@ -37,11 +37,6 @@ public class RealTimeStatsController {
         return ResponseEntity.ok(realTimeStatsService.getTotalCount());
     }
 
-    @GetMapping("/stats/today")
-    public ResponseEntity<TodayStats> getTodayStats() {
-        return ResponseEntity.ok(realTimeStatsService.getTodayStats());
-    }
-
     @GetMapping("/course/{courseNo}/remaining")
     public ResponseEntity<Integer> getRemaining(@PathVariable String courseNo) {
         return ResponseEntity.ok(realTimeStatsService.getRemaining(courseNo));
