@@ -45,7 +45,8 @@
       <nav>
         <button id="nav-course-display" class="active">课程展示</button>
         <button id="nav-course-selection">退选课</button>
-        <button id="nav-students">学生列表</button>
+        <button id="nav-personal-info">个人信息</button>
+        <button id="nav-students" class="hidden">学生列表</button>
         <button id="nav-admin" class="hidden">管理面板</button>
       </nav>
 
@@ -58,8 +59,9 @@
       </section>
 
       <section id="course-selection-view" class="view hidden">
+        <h2>退选课</h2>
         <div class="controls">
-          <label>学号: <input id="selection-student-no" placeholder="例如 2024001" /></label>
+          <label id="selection-student-label" class="hidden">学号: <input id="selection-student-no" placeholder="例如 2024001" /></label>
           <button id="refresh-course-selection">刷新课程</button>
           <span id="service-status-indicator" class="service-status"></span>
         </div>
@@ -72,6 +74,11 @@
         </div>
         <div id="course-selection"></div>
         <div class="pagination" id="course-selection-pagination"></div>
+      </section>
+
+      <section id="personal-info-view" class="view hidden">
+        <h2>个人信息</h2>
+        <div id="personal-info-container"></div>
       </section>
 
       <section id="students-view" class="view hidden">

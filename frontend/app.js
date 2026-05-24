@@ -41,6 +41,11 @@ let studentsAllData = [] // 存储学生列表的全部数据
 // 学生搜索相关变量
 let studentSearchTimer = null // 实时搜索的定时器
 
+// 个人信息相关变量
+let personalCoursesCurrentPage = 1
+let personalCoursesPageSize = 10
+let personalCoursesAllData = [] // 存储个人选课的全部数据
+
 function getAuthHeaders(){
   return {
     'Content-Type': 'application/json',
@@ -79,10 +84,21 @@ function showMainApp(){
   $('current-role').textContent = userRole === 'ADMIN' ? '管理员' : '学生'
   $('current-role').className = `role-badge ${userRole.toLowerCase()}`
   
+  // 根据角色显示不同的导航栏
   if(userRole === 'ADMIN'){
     $('nav-admin').classList.remove('hidden')
+    $('nav-students').classList.remove('hidden')
+    $('nav-personal-info').classList.add('hidden')
+    // 管理员显示学号输入框
+    const studentLabel = $('selection-student-label')
+    if(studentLabel) studentLabel.classList.remove('hidden')
   }else{
     $('nav-admin').classList.add('hidden')
+    $('nav-students').classList.add('hidden')
+    $('nav-personal-info').classList.remove('hidden')
+    // 学生隐藏学号输入框
+    const studentLabel = $('selection-student-label')
+    if(studentLabel) studentLabel.classList.add('hidden')
   }
 }
 
@@ -436,7 +452,27 @@ async function renderCourseSelection(){
   
   console.log('退选课数据总数:', courseSelectionAllData.length, '总页数:', totalPages, '当前页:', courseSelectionCurrentPage)
   
-  const studentNo = userRole === 'STUDENT' ? currentUser : $('selection-student-no').value.trim()
+  // 学生用户直接使用当前登录用户，管理员需要提示（但我们已经去掉了学号输入框）
+  const studentNo = currentUser
+  
+  // 提前获取学生已选的课程列表（一次性获取，提高性能）
+  let selectedCourses = new Set()
+  if(userRole === 'STUDENT'){
+    try{
+      const res = await fetch(API_STUDENTS + '/' + studentNo + '/selections', {
+        headers: getAuthHeaders()
+      })
+      const result = await res.json()
+      if(result.code === 200 && result.data){
+        result.data.forEach(item => {
+          selectedCourses.add(item.courseNo)
+        })
+        console.log('学生已选课程:', Array.from(selectedCourses))
+      }
+    }catch(e){
+      console.error('获取已选课程列表失败:', e)
+    }
+  }
   
   // 创建表格
   const table = document.createElement('table')
@@ -485,7 +521,9 @@ async function renderCourseSelection(){
     btn.className = 'action small-btn'
     
     if(userRole === 'STUDENT'){
-      const selected = await checkSelected(studentNo, item.courseNo)
+      // 使用预先获取的已选课程列表
+      const selected = selectedCourses.has(item.courseNo)
+      console.log(`课程 ${item.courseNo} 选课状态:`, selected)
       if(selected){
         btn.textContent = '退课'
         btn.className = 'action danger small-btn'
@@ -496,6 +534,7 @@ async function renderCourseSelection(){
         btn.onclick = ()=> selectCourse(studentNo, item.courseNo)
       }
     }else if(userRole === 'ADMIN'){
+      // 管理员模式下，使用学号输入框
       btn.textContent = '选课/退课'
       btn.onclick = ()=>{ 
         const sno = $('selection-student-no').value.trim()
@@ -580,6 +619,212 @@ function renderCourseSelectionPagination(totalPages){
   })
 }
 
+// 获取个人信息
+async function fetchPersonalInfo(){
+  if(userRole !== 'STUDENT'){
+    alert('只有学生可以查看个人信息')
+    return
+  }
+  
+  try{
+    // 获取学生信息
+    const res = await fetch(API_STUDENTS + '/' + currentUser, {
+      headers: getAuthHeaders()
+    })
+    const result = await res.json()
+    
+    if(result.code !== 200 || !result.data){
+      alert('获取个人信息失败：' + result.message)
+      return
+    }
+    
+    const studentInfo = result.data
+    
+    // 获取已选课程
+    const coursesRes = await fetch(API_STUDENTS + '/' + currentUser + '/selections', {
+      headers: getAuthHeaders()
+    })
+    const coursesResult = await coursesRes.json()
+    
+    if(coursesResult.code === 200 && coursesResult.data){
+      personalCoursesAllData = coursesResult.data
+    }else{
+      personalCoursesAllData = []
+    }
+    
+    personalCoursesCurrentPage = 1
+    renderPersonalInfo(studentInfo)
+    
+  }catch(e){
+    alert('无法获取个人信息：'+e.message)
+  }
+}
+
+// 渲染个人信息
+function renderPersonalInfo(studentInfo){
+  const container = $('personal-info-container')
+  container.innerHTML = ''
+  
+  // 学生基本信息
+  const role = studentInfo.role || 'STUDENT'
+  const roleBadge = role === 'ADMIN' ? '<span class="role-badge admin">管理员</span>' : '<span class="role-badge student">学生</span>'
+  
+  const infoSection = document.createElement('div')
+  infoSection.className = 'admin-section'
+  infoSection.innerHTML = `
+    <h3>学生信息</h3>
+    <table class="students-table">
+      <tbody>
+        <tr><td><strong>学号</strong></td><td>${studentInfo.studentNo}</td></tr>
+        <tr><td><strong>姓名</strong></td><td>${studentInfo.name}</td></tr>
+        <tr><td><strong>专业</strong></td><td>${studentInfo.major}</td></tr>
+        <tr><td><strong>年级</strong></td><td>${studentInfo.grade}</td></tr>
+        <tr><td><strong>身份</strong></td><td>${roleBadge}</td></tr>
+      </tbody>
+    </table>
+  `
+  container.appendChild(infoSection)
+  
+  // 已选课程
+  const coursesSection = document.createElement('div')
+  coursesSection.className = 'admin-section'
+  coursesSection.style.marginTop = '1.5rem'
+  coursesSection.innerHTML = '<h3>已选课程</h3>'
+  
+  const coursesContainer = document.createElement('div')
+  coursesContainer.id = 'personal-courses-container'
+  coursesSection.appendChild(coursesContainer)
+  container.appendChild(coursesSection)
+  
+  // 渲染选课列表（带分页）
+  renderPersonalCourses()
+}
+
+// 渲染个人选课列表（带分页）
+function renderPersonalCourses(){
+  const container = $('personal-courses-container')
+  container.innerHTML = ''
+  
+  if(personalCoursesAllData.length === 0){
+    container.innerHTML = '<div style="text-align:center;padding:1rem;color:#95a5a6;">暂未选课</div>'
+    $('personal-courses-pagination').innerHTML = ''
+    return
+  }
+  
+  // 计算总页数
+  const totalPages = Math.ceil(personalCoursesAllData.length / personalCoursesPageSize)
+  
+  // 计算当前页的数据范围
+  const start = (personalCoursesCurrentPage - 1) * personalCoursesPageSize
+  const end = start + personalCoursesPageSize
+  const pageData = personalCoursesAllData.slice(start, end)
+  
+  // 创建表格
+  const table = document.createElement('table')
+  table.className = 'students-table courses-table'
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>课程号</th>
+        <th>课程名称</th>
+        <th>教师</th>
+        <th>学分</th>
+        <th>总容量</th>
+        <th>剩余容量</th>
+        <th>选课时间</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  `
+  
+  const tbody = table.querySelector('tbody')
+  
+  pageData.forEach(item=>{
+    const tr = document.createElement('tr')
+    const selectTime = item.selectTime ? new Date(item.selectTime).toLocaleString('zh-CN') : '未知'
+    
+    tr.innerHTML = `
+      <td>${item.courseNo}</td>
+      <td>${item.courseName || '未知'}</td>
+      <td>${item.teacher || '未知'}</td>
+      <td>${item.credit || 0}</td>
+      <td>${item.totalCapacity || 0}</td>
+      <td>${item.remaining ?? 0}</td>
+      <td>${selectTime}</td>
+    `
+    tbody.appendChild(tr)
+  })
+  
+  container.appendChild(table)
+  renderPersonalCoursesPagination(totalPages)
+}
+
+// 渲染个人选课分页控件
+function renderPersonalCoursesPagination(totalPages){
+  const paginationContainer = document.createElement('div')
+  paginationContainer.id = 'personal-courses-pagination'
+  paginationContainer.className = 'pagination'
+  
+  const container = $('personal-info-container')
+  
+  // 移除旧的分页
+  const oldPagination = container.querySelector('#personal-courses-pagination')
+  if(oldPagination) oldPagination.remove()
+  
+  if(totalPages <= 1){
+    paginationContainer.innerHTML = ''
+    container.appendChild(paginationContainer)
+    return
+  }
+  
+  paginationContainer.innerHTML = `
+    <div class="pagination">
+      <button class="page-btn" id="personal-courses-prev-page" ${personalCoursesCurrentPage === 1 ? 'disabled' : ''}>上一页</button>
+      <span class="page-info">${personalCoursesCurrentPage}/${totalPages}</span>
+      <button class="page-btn" id="personal-courses-next-page" ${personalCoursesCurrentPage === totalPages ? 'disabled' : ''}>下一页</button>
+      <span class="page-jump">跳转到:</span>
+      <input type="number" id="personal-courses-jump-page" min="1" max="${totalPages}" value="${personalCoursesCurrentPage}" class="page-input" />
+      <button class="page-btn" id="personal-courses-jump-btn">跳转</button>
+    </div>
+  `
+  
+  container.appendChild(paginationContainer)
+  
+  // 上一页
+  $('personal-courses-prev-page').onclick = ()=>{
+    if(personalCoursesCurrentPage > 1){
+      personalCoursesCurrentPage--
+      renderPersonalCourses()
+    }
+  }
+  
+  // 下一页
+  $('personal-courses-next-page').onclick = ()=>{
+    if(personalCoursesCurrentPage < totalPages){
+      personalCoursesCurrentPage++
+      renderPersonalCourses()
+    }
+  }
+  
+  // 跳转
+  $('personal-courses-jump-btn').onclick = ()=>{
+    const pageNum = parseInt($('personal-courses-jump-page').value)
+    if(pageNum >= 1 && pageNum <= totalPages){
+      personalCoursesCurrentPage = pageNum
+      renderPersonalCourses()
+    }else{
+      alert(`请输入1到${totalPages}之间的页码`)
+    }
+  }
+  
+  // 回车键跳转
+  $('personal-courses-jump-page').addEventListener('keypress', (e)=>{
+    if(e.key === 'Enter'){
+      $('personal-courses-jump-btn').click()
+    }
+  })
+}
+
 async function checkSelected(studentNo, courseNo){
   if(!studentNo) return false
   try{
@@ -587,24 +832,31 @@ async function checkSelected(studentNo, courseNo){
     const url = new URL(`${STATISTICS_SERVICE_URL}/check/selected`)
     url.searchParams.set('studentNo', studentNo)
     url.searchParams.set('courseNo', courseNo)
+    console.log('检查选课状态 - URL:', url.toString())
     const res = await fetch(url, {
       headers: getAuthHeaders()
     })
+    console.log('检查选课状态 - 响应:', res.status)
     // statistics-service 直接返回 boolean，不是 Result 包装
-    return await res.json()
+    const result = await res.json()
+    console.log('检查选课状态 - 结果:', result)
+    return result
   }catch(e){
     // 降级方案：如果 8082 不可用，使用 basic-service (8080)
-    console.warn('statistics-service 不可用，降级到 basic-service')
+    console.warn('statistics-service 不可用，降级到 basic-service', e)
     try{
       const url = new URL(`${BASIC_SERVICE_URL}/selections/check`)
       url.searchParams.set('studentNo', studentNo)
       url.searchParams.set('courseNo', courseNo)
+      console.log('降级检查选课状态 - URL:', url.toString())
       const res = await fetch(url, {
         headers: getAuthHeaders()
       })
       const result = await res.json()
+      console.log('降级检查选课状态 - 结果:', result)
       return result.code === 200 && result.data === true
     }catch(err){
+      console.error('检查选课状态失败:', err)
       return false
     }
   }
@@ -1455,6 +1707,10 @@ document.addEventListener('DOMContentLoaded', ()=>{
     show('course-selection')
     courseSelectionCurrentPage = 1
     fetchCourseSelection()
+  }
+  document.getElementById('nav-personal-info').onclick = ()=>{
+    show('personal-info')
+    fetchPersonalInfo()
   }
   document.getElementById('nav-students').onclick = ()=>{
     show('students')
