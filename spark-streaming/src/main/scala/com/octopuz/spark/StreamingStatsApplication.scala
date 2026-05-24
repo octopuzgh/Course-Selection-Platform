@@ -103,12 +103,12 @@ object StreamingStatsApplication {
               jedis.auth(redisUsername, redisPassword)
             }
             jedis.select(redisDb)
-            val today = LocalDate.now().toString
 
             // 使用 pipeline 提高性能
             val pipeline = jedis.pipelined()
 
             partition.foreach { (row: org.apache.spark.sql.Row) =>
+              val today = LocalDate.now().toString
               try {
                 val studentNo = row.getAs[String]("studentNo")
                 val courseNo = row.getAs[String]("courseNo")
