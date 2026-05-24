@@ -52,6 +52,15 @@ public class CourseController {
     @RequireRole(RequireRole.ADMIN)
     @DeleteMapping("/{courseNo}")
     public Result<Void> deleteCourse(@PathVariable String courseNo) {
+        // 校验课程号格式：必须由大写字母和数字组成，首字母大写
+        if (courseNo == null || courseNo.trim().isEmpty()) {
+            return Result.error(ErrorCode.BAD_REQUEST, "课程号不能为空");
+        }
+        
+        if (!courseNo.matches("^[A-Z][A-Z0-9]*$")) {
+            return Result.error(ErrorCode.BAD_REQUEST, "课程号必须由大写字母和数字组成，且必须以一个大写字母开头");
+        }
+        
         Course course = courseService.getByCourseNo(courseNo);
         if (course == null) {
             return Result.error(ErrorCode.COURSE_NOT_FOUND);
@@ -67,6 +76,15 @@ public class CourseController {
     @Operation(summary = "查询单个课程", description = "根据课程号查询课程详细信息")
     @GetMapping("/{courseNo}")
     public Result<Course> getCourse(@PathVariable String courseNo) {
+        // 校验课程号格式：必须由大写字母和数字组成，首字母大写
+        if (courseNo == null || courseNo.trim().isEmpty()) {
+            return Result.error(ErrorCode.BAD_REQUEST, "课程号不能为空");
+        }
+        
+        if (!courseNo.matches("^[A-Z][A-Z0-9]*$")) {
+            return Result.error(ErrorCode.BAD_REQUEST, "课程号必须由大写字母和数字组成，且必须以一个大写字母开头");
+        }
+        
         Course course = courseService.getByCourseNo(courseNo);
         if (course == null) {
             return Result.error(ErrorCode.COURSE_NOT_FOUND);
@@ -84,6 +102,15 @@ public class CourseController {
     @RequireRole(RequireRole.ADMIN)
     @PutMapping("/{courseNo}/decrement")
     public Result<Course> decrement(@PathVariable String courseNo) {
+        // 校验课程号格式：必须由大写字母和数字组成，首字母大写
+        if (courseNo == null || courseNo.trim().isEmpty()) {
+            return Result.error(ErrorCode.BAD_REQUEST, "课程号不能为空");
+        }
+        
+        if (!courseNo.matches("^[A-Z][A-Z0-9]*$")) {
+            return Result.error(ErrorCode.BAD_REQUEST, "课程号必须由大写字母和数字组成，且必须以一个大写字母开头");
+        }
+        
         Course updated = courseService.decrementRemaining(courseNo);
         if (updated == null) {
             return Result.error(ErrorCode.COURSE_STOCK_INSUFFICIENT);
@@ -95,6 +122,15 @@ public class CourseController {
     @RequireRole(RequireRole.ADMIN)
     @PutMapping("/{courseNo}/increment")
     public Result<Course> increment(@PathVariable String courseNo) {
+        // 校验课程号格式：必须由大写字母和数字组成，首字母大写
+        if (courseNo == null || courseNo.trim().isEmpty()) {
+            return Result.error(ErrorCode.BAD_REQUEST, "课程号不能为空");
+        }
+        
+        if (!courseNo.matches("^[A-Z][A-Z0-9]*$")) {
+            return Result.error(ErrorCode.BAD_REQUEST, "课程号必须由大写字母和数字组成，且必须以一个大写字母开头");
+        }
+        
         Course updated = courseService.incrementRemaining(courseNo);
         if (updated == null) {
             return Result.error(ErrorCode.COURSE_NOT_FOUND);
