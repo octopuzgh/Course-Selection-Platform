@@ -79,8 +79,18 @@
         <div class="controls">
           <button id="refresh-students-list">刷新学生列表</button>
         </div>
-        <div id="students-list-container"></div>
-        <div class="pagination" id="students-list-pagination"></div>
+        
+        <!-- 学生搜索区域 -->
+        <div class="search-controls">
+          <label>学号: <input id="search-student-no" placeholder="搜索学号" /></label>
+          <label>姓名: <input id="search-student-name" placeholder="搜索姓名" /></label>
+        </div>
+        <div id="student-search-results"></div>
+        
+        <div id="students-list-wrapper">
+          <div id="students-list-container"></div>
+          <div class="pagination" id="students-list-pagination"></div>
+        </div>
       </section>
 
       <section id="admin-view" class="view hidden">

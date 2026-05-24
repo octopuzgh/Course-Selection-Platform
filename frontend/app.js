@@ -38,6 +38,9 @@ let studentsCurrentPage = 1
 let studentsPageSize = 10
 let studentsAllData = [] // 存储学生列表的全部数据
 
+// 学生搜索相关变量
+let studentSearchTimer = null // 实时搜索的定时器
+
 function getAuthHeaders(){
   return {
     'Content-Type': 'application/json',
@@ -394,13 +397,36 @@ async function renderCourseSelection(){
   const container = $('course-selection')
   container.innerHTML = ''
   
+  // 应用搜索过滤器
+  let filteredData = courseSelectionAllData
+  if(courseSelectionFilters.courseNo || courseSelectionFilters.courseName || courseSelectionFilters.teacher){
+    filteredData = courseSelectionAllData.filter(item => {
+      // 课程号过滤
+      if(courseSelectionFilters.courseNo){
+        const match = item.courseNo && item.courseNo.toLowerCase().includes(courseSelectionFilters.courseNo.toLowerCase())
+        if(!match) return false
+      }
+      // 课程名称过滤
+      if(courseSelectionFilters.courseName){
+        const match = item.courseName && item.courseName.toLowerCase().includes(courseSelectionFilters.courseName.toLowerCase())
+        if(!match) return false
+      }
+      // 教师过滤
+      if(courseSelectionFilters.teacher){
+        const match = item.teacher && item.teacher.toLowerCase().includes(courseSelectionFilters.teacher.toLowerCase())
+        if(!match) return false
+      }
+      return true
+    })
+  }
+  
   // 计算总页数
-  const totalPages = Math.ceil(courseSelectionAllData.length / courseSelectionPageSize)
+  const totalPages = Math.ceil(filteredData.length / courseSelectionPageSize)
   
   // 计算当前页的数据范围
   const start = (courseSelectionCurrentPage - 1) * courseSelectionPageSize
   const end = start + courseSelectionPageSize
-  const pageData = courseSelectionAllData.slice(start, end)
+  const pageData = filteredData.slice(start, end)
   
   if(pageData.length === 0){
     container.innerHTML = '<div style="text-align:center;padding:2rem;color:#95a5a6;">暂无课程数据</div>'
@@ -890,6 +916,9 @@ async function fetchAllStudents(){
     if(result.code === 200){
       studentsAllData = result.data // 保存全部数据
       studentsCurrentPage = 1 // 重置页码
+      // 显示列表
+      const listWrapper = $('students-list-wrapper')
+      if(listWrapper) listWrapper.style.display = 'block'
       renderStudentsList(studentsAllData)
     }else{
       alert('获取学生列表失败：' + result.message)
@@ -950,6 +979,154 @@ function renderStudentsList(list){
   
   container.appendChild(table)
   renderStudentsPagination(totalPages)
+}
+
+// 学生搜索功能
+async function searchStudents(){
+  const studentNo = $('search-student-no').value.trim()
+  const studentName = $('search-student-name').value.trim()
+  
+  const container = $('student-search-results')
+  const listWrapper = $('students-list-wrapper')
+  
+  // 如果两个搜索框都为空，清空结果并显示列表
+  if(!studentNo && !studentName){
+    container.innerHTML = ''
+    if(listWrapper) listWrapper.style.display = 'block'
+    return
+  }
+  
+  // 有搜索条件时，隐藏列表
+  if(listWrapper) listWrapper.style.display = 'none'
+  
+  try{
+    // 获取所有学生数据
+    const res = await fetch(API_STUDENTS, {
+      headers: getAuthHeaders()
+    })
+    const result = await res.json()
+    
+    if(result.code !== 200 || !result.data){
+      container.innerHTML = '<div style="text-align:center;padding:1rem;color:#e74c3c;">搜索失败：获取学生列表失败</div>'
+      return
+    }
+    
+    // 过滤学生数据
+    let filteredStudents = result.data
+    
+    if(studentNo){
+      filteredStudents = filteredStudents.filter(s => 
+        s.studentNo && s.studentNo.toLowerCase().includes(studentNo.toLowerCase())
+      )
+    }
+    
+    if(studentName){
+      filteredStudents = filteredStudents.filter(s => 
+        s.name && s.name.toLowerCase().includes(studentName.toLowerCase())
+      )
+    }
+    
+    if(filteredStudents.length === 0){
+      container.innerHTML = '<div style="text-align:center;padding:1rem;color:#e74c3c;">搜索失败：未找到匹配的学生</div>'
+      return
+    }
+    
+    // 显示搜索结果
+    container.innerHTML = ''
+    
+    // 为每个匹配的学生显示信息和选课
+    for(const student of filteredStudents){
+      const studentSection = document.createElement('div')
+      studentSection.className = 'admin-section'
+      studentSection.style.marginBottom = '1.5rem'
+      
+      // 学生基本信息
+      const role = student.role || 'STUDENT'
+      const roleBadge = role === 'ADMIN' ? '<span class="role-badge admin">管理员</span>' : '<span class="role-badge student">学生</span>'
+      
+      studentSection.innerHTML = `
+        <h3>学生信息</h3>
+        <table class="students-table" style="margin-bottom:1rem;">
+          <tbody>
+            <tr><td><strong>学号</strong></td><td>${student.studentNo}</td></tr>
+            <tr><td><strong>姓名</strong></td><td>${student.name}</td></tr>
+            <tr><td><strong>专业</strong></td><td>${student.major}</td></tr>
+            <tr><td><strong>年级</strong></td><td>${student.grade}</td></tr>
+            <tr><td><strong>身份</strong></td><td>${roleBadge}</td></tr>
+          </tbody>
+        </table>
+        <h3>已选课程</h3>
+        <div class="student-courses-container" data-student-no="${student.studentNo}"></div>
+      `
+      
+      container.appendChild(studentSection)
+      
+      // 获取该学生的选课列表
+      const coursesContainer = studentSection.querySelector('.student-courses-container')
+      await loadStudentCourses(student.studentNo, coursesContainer)
+    }
+    
+  }catch(e){
+    container.innerHTML = `<div style="text-align:center;padding:1rem;color:#e74c3c;">搜索失败：${e.message}</div>`
+  }
+}
+
+// 加载学生的选课列表
+async function loadStudentCourses(studentNo, container){
+  try{
+    const res = await fetch(`${API_STUDENTS}/${studentNo}/selections`, {
+      headers: getAuthHeaders()
+    })
+    const result = await res.json()
+    
+    if(result.code !== 200 || !result.data || result.data.length === 0){
+      container.innerHTML = '<div style="text-align:center;padding:1rem;color:#95a5a6;">该学生暂未选课</div>'
+      return
+    }
+    
+    const courses = result.data
+    
+    // 创建表格（与课程展示相同的样式）
+    const table = document.createElement('table')
+    table.className = 'students-table courses-table'
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>课程号</th>
+          <th>课程名称</th>
+          <th>教师</th>
+          <th>学分</th>
+          <th>总容量</th>
+          <th>剩余容量</th>
+          <th>选课时间</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `
+    
+    const tbody = table.querySelector('tbody')
+    
+    courses.forEach(item=>{
+      const tr = document.createElement('tr')
+      const selectTime = item.selectTime ? new Date(item.selectTime).toLocaleString('zh-CN') : '未知'
+      
+      tr.innerHTML = `
+        <td>${item.courseNo}</td>
+        <td>${item.courseName || '未知'}</td>
+        <td>${item.teacher || '未知'}</td>
+        <td>${item.credit || 0}</td>
+        <td>${item.totalCapacity || 0}</td>
+        <td>${item.remaining ?? 0}</td>
+        <td>${selectTime}</td>
+      `
+      tbody.appendChild(tr)
+    })
+    
+    container.appendChild(table)
+    
+  }catch(e){
+    container.innerHTML = `<div style="text-align:center;padding:1rem;color:#e74c3c;">加载选课列表失败：${e.message}</div>`
+  }
 }
 
 // 渲染学生列表分页控件
@@ -1311,9 +1488,38 @@ document.addEventListener('DOMContentLoaded', ()=>{
   
   // 学生列表事件
   document.getElementById('refresh-students-list').onclick = ()=>{
+    // 清空搜索框
+    $('search-student-no').value = ''
+    $('search-student-name').value = ''
+    // 清空搜索结果
+    $('student-search-results').innerHTML = ''
+    // 显示列表
+    const listWrapper = $('students-list-wrapper')
+    if(listWrapper) listWrapper.style.display = 'block'
+    // 刷新学生列表
     studentsCurrentPage = 1
     fetchAllStudents()
   }
+  
+  // 学生实时搜索事件
+  const searchStudentNoInput = $('search-student-no')
+  const searchStudentNameInput = $('search-student-name')
+  
+  // 学号输入实时搜索
+  searchStudentNoInput.addEventListener('input', ()=>{
+    clearTimeout(studentSearchTimer)
+    studentSearchTimer = setTimeout(()=>{
+      searchStudents()
+    }, 300) // 300ms 延迟，避免频繁请求
+  })
+  
+  // 姓名输入实时搜索
+  searchStudentNameInput.addEventListener('input', ()=>{
+    clearTimeout(studentSearchTimer)
+    studentSearchTimer = setTimeout(()=>{
+      searchStudents()
+    }, 300) // 300ms 延迟，避免频繁请求
+  })
   
   // 管理面板事件
   document.getElementById('admin-add-course').onclick = addCourse
