@@ -1493,6 +1493,12 @@ async function addCourse(){
     return
   }
   
+  // 前端校验：课程号必须由大写字母和数字组成，且首字母大写
+  if(!/^[A-Z][A-Z0-9]*$/.test(courseNo)){
+    alert('课程号格式不正确！\n\n要求：\n1. 必须以一个大写字母开头\n2. 后续字符只能是大写字母或数字\n3. 不允许小写字母、下划线或连字符\n\n示例：CS101、MATH202、A1')
+    return
+  }
+  
   try{
     const res = await fetch(API_COURSES, {
       method: 'POST',
@@ -1579,6 +1585,12 @@ async function deleteCourse(){
     return
   }
   
+  // 前端校验：课程号必须由大写字母和数字组成，且首字母大写
+  if(!/^[A-Z][A-Z0-9]*$/.test(courseNo)){
+    alert('课程号格式不正确！\n\n要求：\n1. 必须以一个大写字母开头\n2. 后续字符只能是大写字母或数字\n3. 不允许小写字母、下划线或连字符\n\n示例：CS101、MATH202、A1')
+    return
+  }
+  
   if(!confirm(`确定要删除课程 ${courseNo} 吗？`)) return
   
   try{
@@ -1634,6 +1646,12 @@ async function adminSearchCourse(){
   const courseNo = $('admin-search-course-no').value.trim()
   if(!courseNo){
     alert('请输入课程号')
+    return
+  }
+  
+  // 前端校验：课程号必须由大写字母和数字组成，且首字母大写
+  if(!/^[A-Z][A-Z0-9]*$/.test(courseNo)){
+    alert('课程号格式不正确！\n\n要求：\n1. 必须以一个大写字母开头\n2. 后续字符只能是大写字母或数字\n3. 不允许小写字母、下划线或连字符\n\n示例：CS101、MATH202、A1')
     return
   }
   
