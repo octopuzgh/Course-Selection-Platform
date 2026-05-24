@@ -75,6 +75,157 @@ main{padding:2rem;max-width:1200px;margin:0 auto}
   margin-top: 0;
 }
 
+/* 删除学生区域样式 */
+.delete-student-form{
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+.delete-student-form input{
+  flex: 1;
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  height: 2.5rem;
+}
+.delete-student-form .action.danger{
+  width: 150px;
+  flex-shrink: 0;
+  padding: 0.6rem;
+  height: 2.5rem;
+  margin-top: 0;
+}
+
+/* 搜索表单样式 */
+.search-controls{
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+}
+.search-controls label{
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.search-controls input{
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+.search-controls button{
+  padding: 0.5rem 1rem;
+  background: #3498db;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.search-controls button:hover{
+  background: #2980b9;
+}
+
+/* 管理面板搜索表单样式 */
+.search-course-form,
+.search-student-form{
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+.search-course-form input,
+.search-student-form input{
+  flex: 1;
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  height: 2.5rem;
+}
+.search-course-form .action,
+.search-student-form .action{
+  width: 120px;
+  flex-shrink: 0;
+  padding: 0.6rem;
+  height: 2.5rem;
+  margin-top: 0;
+}
+
+/* 搜索结果样式 */
+.search-result{
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #3498db;
+}
+.search-result h4{
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+.search-result table{
+  margin-top: 0.5rem;
+}
+
+#course-display,
+#course-selection,
+#students-list-container{
+  min-height: 400px; /* 确保表格区域有最小高度，分页控件位置不变 */
+}
+
+/* 分页控件样式 */
+.pagination{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 1rem;
+}
+.page-btn{
+  padding: 0.5rem 1.2rem;
+  background: #3498db;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+.page-btn:hover:not(:disabled){
+  background: #2980b9;
+}
+.page-btn:disabled{
+  background: #95a5a6;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.page-info{
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.95rem;
+}
+.page-jump{
+  color: #2c3e50;
+  font-weight: 500;
+}
+.pagination input[type="number"]{
+  width: 60px;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 0.95rem;
+}
+.pagination input[type="number"]:focus{
+  outline: none;
+  border-color: #3498db;
+}
+
 /* 学生列表表格样式 */
 .students-table{
   width: 100%;
@@ -121,6 +272,42 @@ main{padding:2rem;max-width:1200px;margin:0 auto}
   padding: 0.4rem 0.8rem;
   margin: 0;
 }
+
+/* 服务状态指示器样式 */
+.service-status{
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-left: auto;
+}
+.service-status.normal{
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+.service-status.fallback{
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+.service-status::before{
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.service-status.normal::before{
+  background: #28a745;
+}
+.service-status.fallback::before{
+  background: #ffc107;
+}
+
 footer{text-align:center;padding:1.5rem;color:#95a5a6;font-size:.85rem}
 @media(max-width:768px){
   header{flex-direction:column;gap:1rem;text-align:center}
