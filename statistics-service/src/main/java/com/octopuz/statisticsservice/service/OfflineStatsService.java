@@ -56,9 +56,13 @@ public class OfflineStatsService {
 
         long totalSelections = allStats.stream().mapToLong(DailyStats::getDailySelections).sum();
         long totalStudents = allStats.stream().mapToLong(DailyStats::getDailyStudents).sum();
+        long totalSelectCount = allStats.stream().mapToLong(DailyStats::getSelectCount).sum();
+        long totalDropCount = allStats.stream().mapToLong(DailyStats::getDropCount).sum();
 
         Map<String, Object> summary = new HashMap<>();
         summary.put("totalSelections", totalSelections);
+        summary.put("totalSelectCount", totalSelectCount);
+        summary.put("totalDropCount", totalDropCount);
         summary.put("totalStudents", totalStudents);
         summary.put("totalDays", allStats.size());
         return summary;

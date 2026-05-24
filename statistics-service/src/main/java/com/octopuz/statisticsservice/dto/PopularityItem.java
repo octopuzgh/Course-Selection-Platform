@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PopularityItem {
     private String courseNo;
+    private String courseName;
     private Integer selectionCount;
     private Integer rank;
 }

@@ -177,6 +177,7 @@ public class RealTimeStatsService {
 
                 PopularityItem item = PopularityItem.builder()
                         .courseNo(courseNo)
+                        .courseName(getCourseName(courseNo))
                         .selectionCount(selectionCount)
                         .rank(rank++)
                         .build();
