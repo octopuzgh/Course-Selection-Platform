@@ -54,6 +54,57 @@ main{padding:2rem;max-width:1200px;margin:0 auto}
 .admin-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1rem}
 .admin-form input{padding:.6rem;border:1px solid #ddd;border-radius:4px}
 
+/* 统计页面样式 */
+.stats-nav{
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 1.5rem;
+}
+.stats-nav button{
+  padding: 0.6rem 1.2rem;
+  border: none;
+  background: #ecf0f1;
+  color: #2c3e50;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+.stats-nav button.active,
+.stats-nav button:hover{
+  background: #3498db;
+  color: #fff;
+}
+.stats-panel{
+  min-height: 400px;
+}
+.date-selector{
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+}
+.date-selector label{
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.date-selector select{
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  min-width: 80px;
+}
+.date-selector .action{
+  margin-top: 0;
+}
+
 /* 删除课程区域样式 */
 .delete-course-form{
   display: flex;

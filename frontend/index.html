@@ -103,6 +103,15 @@
       <section id="admin-view" class="view hidden">
         <h2>管理面板</h2>
         
+        <!-- 统计功能按钮 -->
+        <div class="admin-section">
+          <h3>数据统计</h3>
+          <div class="admin-form">
+            <button id="admin-realtime-stats" class="action">实时统计</button>
+            <button id="admin-offline-stats" class="action">离线统计</button>
+          </div>
+        </div>
+        
         <div class="admin-section">
           <h3>课程管理</h3>
           <div class="admin-form">
@@ -145,6 +154,133 @@
         </div>
       </section>
 
+      <!-- 实时统计页面 -->
+      <section id="realtime-stats-view" class="view hidden">
+        <div class="controls">
+          <button id="back-to-admin">返回管理面板</button>
+        </div>
+        
+        <!-- 系统选课总次数 -->
+        <div class="admin-section">
+          <h3>系统统计概览</h3>
+          <div id="total-selection-count" style="font-size: 1.5rem; font-weight: bold; color: #2c3e50; padding: 1rem; text-align: center;">
+            加载中...
+          </div>
+        </div>
+        
+        <!-- 导航栏 -->
+        <nav class="stats-nav">
+          <button id="nav-selection-stats" class="active">选课统计</button>
+          <button id="nav-popular-courses">热门课程</button>
+        </nav>
+        
+        <!-- 选课统计面板 -->
+        <section id="selection-stats-panel" class="stats-panel">
+          <!-- 今日统计 -->
+          <div class="admin-section">
+            <h3>今日统计</h3>
+            <div id="today-stats-container">
+              <p>加载中...</p>
+            </div>
+          </div>
+          
+          <!-- 往期数据 -->
+          <div class="admin-section">
+            <h3>往期数据</h3>
+            <div class="date-selector">
+              <label>年：<select id="stats-year-select"></select></label>
+              <label>月：<select id="stats-month-select"></select></label>
+              <label>日：<select id="stats-day-select"></select></label>
+              <button id="load-historical-stats" class="action">查询</button>
+            </div>
+            <div id="historical-stats-container"></div>
+          </div>
+        </section>
+        
+        <!-- 热门课程面板 -->
+        <section id="popular-courses-panel" class="stats-panel hidden">
+          <!-- 今日热门 -->
+          <div class="admin-section">
+            <h3>今日热门</h3>
+            <div id="today-popular-container">
+              <p>加载中...</p>
+            </div>
+          </div>
+          
+          <!-- 往期热门 -->
+          <div class="admin-section">
+            <h3>往期热门</h3>
+            <div class="date-selector">
+              <label>年：<select id="popular-year-select"></select></label>
+              <label>月：<select id="popular-month-select"></select></label>
+              <label>日：<select id="popular-day-select"></select></label>
+              <button id="load-historical-popular" class="action">查询</button>
+            </div>
+            <div id="historical-popular-container"></div>
+          </div>
+        </section>
+      </section>
+
+      <!-- 离线统计页面 -->
+      <section id="offline-stats-view" class="view hidden">
+        <div class="controls">
+          <button id="back-to-admin-from-offline">返回管理面板</button>
+        </div>
+        
+        <!-- 导航栏 -->
+        <nav class="stats-nav">
+          <button id="nav-course-ranking" class="active">历史课程排名</button>
+          <button id="nav-course-history">课程历史统计</button>
+          <button id="nav-selection-trend">选课趋势</button>
+        </nav>
+        
+        <!-- 历史课程排名面板 -->
+        <section id="course-ranking-panel" class="stats-panel">
+          <div class="admin-section">
+            <h3>历史课程排名</h3>
+            <div id="course-ranking-chart-container" style="position: relative; height: 600px;">
+              <canvas id="course-ranking-chart"></canvas>
+            </div>
+            <!-- 分页控制器 -->
+            <div class="pagination" id="course-ranking-pagination"></div>
+          </div>
+        </section>
+        
+        <!-- 课程历史统计面板 -->
+        <section id="course-history-panel" class="stats-panel hidden">
+          <!-- 统计概览 -->
+          <div class="admin-section">
+            <h3>统计概览</h3>
+            <div id="stats-summary-container">
+              <p>加载中...</p>
+            </div>
+          </div>
+          
+          <!-- 单门课程历史统计 -->
+          <div class="admin-section">
+            <h3>单门课程历史统计</h3>
+            <div class="date-selector">
+              <label>课程号：<input id="course-history-input" placeholder="例如 CS101" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;" /></label>
+              <button id="load-course-history" class="action">查询</button>
+            </div>
+            <div id="course-history-container"></div>
+          </div>
+        </section>
+        
+        <!-- 选课趋势面板 -->
+        <section id="selection-trend-panel" class="stats-panel hidden">
+          <div class="admin-section">
+            <h3>选课趋势</h3>
+            <div class="date-selector">
+              <label>起始日期：<input type="date" id="trend-start-date" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;" /></label>
+              <label>结束日期：<input type="date" id="trend-end-date" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;" /></label>
+              <button id="load-selection-trend" class="action">查询</button>
+            </div>
+            <div id="selection-trend-container"></div>
+          </div>
+        </section>
+      </section>
+
     </section>
   </main>
 
@@ -157,6 +293,8 @@
     开发环境: window.BACKEND_HOST = '192.168.137.1'
     生产环境: window.BACKEND_HOST = 'localhost' (默认)
   -->
+  <!-- Chart.js 图表库 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script>
     // 可以通过修改这里的值来切换环境
     window.BACKEND_HOST = '192.168.137.1'  // 测试环境
