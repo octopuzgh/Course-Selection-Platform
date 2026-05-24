@@ -47,8 +47,8 @@
 ```json
 {
     "success": true,
-    "code": "SELECT_SUCCESS",
-    "message": "选课成功"
+    "message": "选课成功",
+    "selectionId": null
 }
 ```
 
@@ -57,8 +57,8 @@
 ```json
 {
     "success": false,
-    "code": "COURSE_FULL",
-    "message": "课程已满"
+    "message": "课程已满",
+    "selectionId": null
 }
 ```
 
@@ -89,8 +89,8 @@
 ```json
 {
     "success": true,
-    "code": "DROP_SUCCESS",
-    "message": "退课成功"
+    "message": "退课成功",
+    "selectionId": null
 }
 ```
 
@@ -121,8 +121,8 @@
 ```json
 {
     "success": true,
-    "code": "SELECT_SUCCESS",
-    "message": "选课成功"
+    "message": "选课成功",
+    "selectionId": null
 }
 ```
 
@@ -155,8 +155,8 @@
 ```json
 {
     "success": true,
-    "code": "DROP_SUCCESS",
-    "message": "退课成功"
+    "message": "退课成功",
+    "selectionId": null
 }
 ```
 
@@ -172,7 +172,11 @@
 
 ## 实时统计 (Real-time)
 
-### 3. 库存充足榜 Top10
+实时数据来源：Spark Streaming 消费 Kafka 消息，实时写入 Redis
+
+---
+
+### 1. 库存充足榜 Top10
 
 **GET** `/api/realtime/rank/top10`
 
@@ -187,21 +191,16 @@
         "selectedCount": 30,
         "remainingCount": 70,
         "rank": 1
-    },
-    {
-        "courseNo": "CS102",
-        "courseName": null,
-        "totalCount": 80,
-        "selectedCount": 20,
-        "remainingCount": 60,
-        "rank": 2
     }
 ]
 ```
 
+#### 说明
+返回剩余库存最多的课程（按 `库存 = 容量 - 净选课人数` 排序）
+
 ---
 
-### 4. 库存充足榜（分页）
+### 2. 库存充足榜（分页）
 
 **GET** `/api/realtime/rank/list`
 
@@ -235,7 +234,7 @@ GET /api/realtime/rank/list?page=1&size=10
 
 ---
 
-### 5. 累计选课总数
+### 3. 累计选课总数
 
 **GET** `/api/realtime/stats/total`
 
@@ -246,33 +245,11 @@ GET /api/realtime/rank/list?page=1&size=10
 ```
 
 #### 说明
-返回 Long 类型，表示从系统上线至今的累计选课次数（净选课，SELECT - DROP）
+返回 Long 类型，表示从系统上线至今的累计净选课次数（SELECT - DROP）
 
 ---
 
-### 6. 今日统计
-
-**GET** `/api/realtime/stats/today`
-
-#### 响应示例
-
-```json
-{
-    "totalCount": 45,
-    "uniqueStudents": 38
-}
-```
-
-#### 说明
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| totalCount | Long | 今日选课次数 |
-| uniqueStudents | Long | 今日去重选课学生数 |
-
----
-
-### 7. 课程剩余名额
+### 4. 课程剩余名额
 
 **GET** `/api/realtime/course/{courseNo}/remaining`
 
@@ -299,7 +276,7 @@ GET /api/realtime/course/CS101/remaining
 
 ---
 
-### 8. 检查是否已选
+### 5. 检查是否已选
 
 **GET** `/api/realtime/check/selected`
 
@@ -327,7 +304,7 @@ true
 
 ---
 
-### 9. 今日选课统计
+### 6. 今日选课统计
 
 **GET** `/api/realtime/daily/today`
 
@@ -335,9 +312,9 @@ true
 
 ```json
 {
-    "statDate": "2024-01-15",
-    "dailyCount": 120,
-    "dailyStudents": 105
+    "statDate": "2026-05-24",
+    "dailyCount": 45,
+    "dailyStudents": 38
 }
 ```
 
@@ -346,12 +323,12 @@ true
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | statDate | String | 统计日期 |
-| dailyCount | Long | 当日选课次数（净） |
-| dailyStudents | Long | 当日选课学生数 |
+| dailyCount | Long | 当日选课净次数（SELECT - DROP） |
+| dailyStudents | Long | 当日选课学生数（去重） |
 
 ---
 
-### 10. 指定日期选课统计
+### 7. 指定日期选课统计
 
 **GET** `/api/realtime/daily/{date}`
 
@@ -364,14 +341,14 @@ true
 #### 请求示例
 
 ```
-GET /api/realtime/daily/2024-01-15
+GET /api/realtime/daily/2026-05-24
 ```
 
 #### 响应示例
 
 ```json
 {
-    "statDate": "2024-01-15",
+    "statDate": "2026-05-24",
     "dailyCount": 120,
     "dailyStudents": 105
 }
@@ -379,7 +356,7 @@ GET /api/realtime/daily/2024-01-15
 
 ---
 
-### 11. 今日热度榜 Top10
+### 8. 今日热度榜 Top10
 
 **GET** `/api/realtime/popularity/top10`
 
@@ -391,11 +368,6 @@ GET /api/realtime/daily/2024-01-15
         "courseNo": "CS101",
         "selectionCount": 25,
         "rank": 1
-    },
-    {
-        "courseNo": "CS102",
-        "selectionCount": 18,
-        "rank": 2
     }
 ]
 ```
@@ -405,7 +377,7 @@ GET /api/realtime/daily/2024-01-15
 
 ---
 
-### 12. 热度榜列表（分页）
+### 9. 热度榜列表（分页）
 
 **GET** `/api/realtime/popularity/list`
 
@@ -439,9 +411,9 @@ GET /api/realtime/popularity/list?page=1&size=10
 
 ---
 
-### 13. 指定日期热度榜
+### 10. 指定日期热度榜
 
-**GET** `/api/realtime/popularity/{date}`
+**GET** `/api/realtime/popularity/{date}**
 
 #### 路径参数
 
@@ -459,7 +431,7 @@ GET /api/realtime/popularity/list?page=1&size=10
 #### 请求示例
 
 ```
-GET /api/realtime/popularity/2024-01-15?page=1&size=10
+GET /api/realtime/popularity/2026-05-24?page=1&size=10
 ```
 
 #### 响应示例
@@ -478,7 +450,11 @@ GET /api/realtime/popularity/2024-01-15?page=1&size=10
 
 ## 离线统计 (Offline)
 
-### 14. 历史课程排名
+历史数据来源：PySpark 定时任务从 MySQL 读取 selection_log 计算
+
+---
+
+### 11. 历史课程排名
 
 **GET** `/api/offline/course/ranking`
 
@@ -486,13 +462,12 @@ GET /api/realtime/popularity/2024-01-15?page=1&size=10
 
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
-| page | Integer | 否 | 1 | 页码 |
-| size | Integer | 否 | 10 | 每页数量 |
+| limit | Integer | 否 | 10 | 返回数量 |
 
 #### 请求示例
 
 ```
-GET /api/offline/course/ranking?page=1&size=10
+GET /api/offline/course/ranking?limit=10
 ```
 
 #### 响应示例
@@ -505,8 +480,8 @@ GET /api/offline/course/ranking?page=1&size=10
         "totalRecords": 85,
         "selectCount": 82,
         "dropCount": 2,
-        "firstSelectTime": "2024-01-10 08:00:00",
-        "lastSelectTime": "2024-01-15 16:30:00",
+        "firstSelectTime": "2026-05-20 08:00:00",
+        "lastSelectTime": "2026-05-24 16:30:00",
         "rank": 1
     }
 ]
@@ -526,7 +501,7 @@ GET /api/offline/course/ranking?page=1&size=10
 
 ---
 
-### 15. 单门课程历史统计
+### 12. 单门课程历史统计
 
 **GET** `/api/offline/course/{courseNo}`
 
@@ -551,29 +526,29 @@ GET /api/offline/course/CS101
     "totalRecords": 85,
     "selectCount": 82,
     "dropCount": 2,
-    "firstSelectTime": "2024-01-10 08:00:00",
-    "lastSelectTime": "2024-01-15 16:30:00",
+    "firstSelectTime": "2026-05-20 08:00:00",
+    "lastSelectTime": "2026-05-24 16:30:00",
     "rank": 1
 }
 ```
 
 ---
 
-### 16. 每日选课趋势
+### 13. 每日选课趋势
 
 **GET** `/api/offline/daily`
 
 #### 请求参数 (Query)
 
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| page | Integer | 否 | 1 | 页码 |
-| size | Integer | 否 | 30 | 每页数量 |
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| start | LocalDate | ✅ | 开始日期（yyyy-MM-dd） |
+| end | LocalDate | ✅ | 结束日期（yyyy-MM-dd） |
 
 #### 请求示例
 
 ```
-GET /api/offline/daily?page=1&size=30
+GET /api/offline/daily?start=2026-05-20&end=2026-05-24
 ```
 
 #### 响应示例
@@ -581,7 +556,7 @@ GET /api/offline/daily?page=1&size=30
 ```json
 [
     {
-        "statDate": "2024-01-15",
+        "statDate": "2026-05-24",
         "dailyStudents": 105,
         "dailySelections": 98,
         "selectCount": 100,
@@ -596,15 +571,15 @@ GET /api/offline/daily?page=1&size=30
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | statDate | String | 统计日期 |
-| dailyStudents | Integer | 当日选课学生数 |
+| dailyStudents | Integer | 当日选课学生数（去重） |
 | dailySelections | Integer | 当日净选课次数 |
 | selectCount | Integer | 当日选课次数 |
 | dropCount | Integer | 当日退课次数 |
-| dailyCourses | Integer | 当日涉及课程数 |
+| dailyCourses | Integer | 当日有操作的课程数 |
 
 ---
 
-### 17. 汇总统计
+### 14. 统计概览
 
 **GET** `/api/offline/summary`
 
@@ -612,12 +587,11 @@ GET /api/offline/daily?page=1&size=30
 
 ```json
 {
-    "totalCourses": 50,
+    "totalStudents": 500,
+    "totalCourses": 30,
     "totalSelections": 1523,
-    "totalStudents": 420,
-    "avgSelectionsPerCourse": 30.46,
-    "maxDailySelections": 156,
-    "minDailySelections": 23
+    "totalDrops": 45,
+    "avgSelectionsPerCourse": 50.8
 }
 ```
 
@@ -625,30 +599,33 @@ GET /api/offline/daily?page=1&size=30
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| totalCourses | Integer | 课程总数 |
-| totalSelections | Long | 累计净选课次数 |
-| totalStudents | Long | 累计选课学生数 |
-| avgSelectionsPerCourse | Double | 平均每门课程选课人数 |
-| maxDailySelections | Integer | 单日最高选课次数 |
-| minDailySelections | Integer | 单日最低选课次数 |
+| totalStudents | Integer | 选过课的学生总数 |
+| totalCourses | Integer | 开设的课程总数 |
+| totalSelections | Integer | 历史累计选课次数 |
+| totalDrops | Integer | 历史累计退课次数 |
+| avgSelectionsPerCourse | Double | 平均每门课选课人数 |
 
 ---
 
-## 8080 Basic Service (端口 8080)
+## Redis Key 说明
 
-### 基础信息
-- **Base URL**: `http://localhost:8080`
-- **Content-Type**: `application/json`
-- **API 文档**: Knife4j (`http://localhost:8080/doc.html`)
+### 实时统计 Key（Spark Streaming 写入）
 
-### 核心接口
+| Key Pattern | 类型 | 说明 |
+|------------|------|------|
+| `stats:total` | String | 累计净选课总数 |
+| `stats:daily:count:{date}` | String | 每日净选课次数 |
+| `stats:daily:students:{date}` | Set | 每日选课学生集合 |
+| `course:popularity:{date}` | Sorted Set | 每日课程热度（SELECT 次数） |
+| `course:stock:{courseNo}` | String | 课程剩余库存 |
+| `course:capacity:{courseNo}` | String | 课程容量 |
+| `course:ranking` | Sorted Set | 库存充足榜（容量 - 净选课） |
+| `selected:{studentNo}:{courseNo}` | String | 学生已选课标记 |
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/courses/{courseNo}` | 查询单个课程 |
-| GET | `/courses` | 获取所有课程列表 |
-| GET | `/students` | 获取所有学生列表 |
-| GET | `/students/{studentNo}` | 查询学生信息 |
-| POST | `/users/login` | 用户登录 |
+### 历史统计 Key（PySpark 定时任务写入）
 
-完整接口文档访问 Knife4j UI：`http://localhost:8080/doc.html`
+| Key Pattern | 类型 | 说明 |
+|------------|------|------|
+| `offline:course:stats:{courseNo}` | Hash | 课程历史统计 |
+| `offline:daily:stats:{date}` | Hash | 每日历史统计 |
+
