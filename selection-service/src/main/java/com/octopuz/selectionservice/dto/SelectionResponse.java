@@ -16,6 +16,10 @@ public class SelectionResponse {
         return new SelectionResponse(true, "选课成功", selectionId);
     }
 
+    public static SelectionResponse successDrop(Long selectionId) {
+        return new SelectionResponse(true, "退课成功", selectionId);
+    }
+
     public static SelectionResponse fail(String message) {
         return new SelectionResponse(false, message, null);
     }

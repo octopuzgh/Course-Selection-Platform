@@ -121,7 +121,7 @@ public class SelectionServiceImpl implements SelectionService {
             messageProducer.sendDropMessage(studentNo, courseNo);
 
             log.info("学生{}成功退课{}", studentNo, courseNo);
-            return SelectionResponse.success(generateSelectionId());
+            return SelectionResponse.successDrop(generateSelectionId());
 
         } finally {
             if (lockAcquired) {
