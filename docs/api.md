@@ -366,6 +366,7 @@ GET /api/realtime/daily/2026-05-24
 [
     {
         "courseNo": "CS101",
+        "courseName": "数据结构",
         "selectionCount": 25,
         "rank": 1
     }
@@ -400,6 +401,7 @@ GET /api/realtime/popularity/list?page=1&size=10
 [
     {
         "courseNo": "CS101",
+        "courseName": "数据结构",
         "selectionCount": 25,
         "rank": 1
     }
@@ -440,6 +442,7 @@ GET /api/realtime/popularity/2026-05-24?page=1&size=10
 [
     {
         "courseNo": "CS101",
+        "courseName": "数据结构",
         "selectionCount": 25,
         "rank": 1
     }
@@ -587,11 +590,11 @@ GET /api/offline/daily?start=2026-05-20&end=2026-05-24
 
 ```json
 {
-    "totalStudents": 500,
-    "totalCourses": 30,
     "totalSelections": 1523,
-    "totalDrops": 45,
-    "avgSelectionsPerCourse": 50.8
+    "totalSelectCount": 1568,
+    "totalDropCount": 45,
+    "totalStudents": 500,
+    "totalDays": 5
 }
 ```
 
@@ -599,11 +602,11 @@ GET /api/offline/daily?start=2026-05-20&end=2026-05-24
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| totalStudents | Integer | 选过课的学生总数 |
-| totalCourses | Integer | 开设的课程总数 |
-| totalSelections | Integer | 历史累计选课次数 |
-| totalDrops | Integer | 历史累计退课次数 |
-| avgSelectionsPerCourse | Double | 平均每门课选课人数 |
+| totalSelections | Long | 历史累计净选课次数 |
+| totalSelectCount | Long | 历史累计选课次数 |
+| totalDropCount | Long | 历史累计退课次数 |
+| totalStudents | Long | 选过课的学生总数（去重） |
+| totalDays | Integer | 统计天数 |
 
 ---
 
