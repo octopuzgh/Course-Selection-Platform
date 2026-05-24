@@ -2,6 +2,7 @@ package com.simon.basicservice.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -10,6 +11,7 @@ import java.math.BigDecimal;
 public class CourseCreateRequest {
 
     @NotBlank(message = "课程号不能为空")
+    @Pattern(regexp = "^[A-Z][A-Z0-9]*$", message = "课程号必须由大写字母和数字组成，且必须以一个大写字母开头")
     private String courseNo;
 
     @NotBlank(message = "课程名称不能为空")

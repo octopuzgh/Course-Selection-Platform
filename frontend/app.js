@@ -326,22 +326,22 @@ async function fetchCourseSelection(){
             return {
               ...item,
               teacher: courseResult.data.teacher || '未知',
-              credit: courseResult.data.credit || 0
+              credit: courseResult.data.credit || 0,
+              courseName: courseResult.data.courseName || item.courseName || '未知'
             }
           }
         }
+        // 课程不存在（已被删除），返回null标记
+        console.warn(`课程${item.courseNo}不存在，已跳过`)
+        return null
       }catch(e){
-        console.warn(`获取课程${item.courseNo}详情失败`, e)
-      }
-      return {
-        ...item,
-        teacher: '未知',
-        credit: 0
+        console.warn(`获取课程${item.courseNo}详情失败，已跳过`, e)
+        return null
       }
     }))
     
-    // 保存所有数据到全局变量
-    courseSelectionAllData = enrichedData
+    // 过滤掉不存在的课程（null值）
+    courseSelectionAllData = enrichedData.filter(item => item !== null)
     courseSelectionCurrentPage = 1
     
     console.log('获取到的总数据量:', courseSelectionAllData.length)
@@ -496,12 +496,15 @@ async function renderCourseSelection(){
   
   const tbody = table.querySelector('tbody')
   
-  // 渲染当前页数据
+  // 渲染当前页数据（重新计算排名）
   const rows = []
-  for(const item of pageData){
+  for(let i = 0; i < pageData.length; i++){
+    const item = pageData[i]
+    // 根据当前页和每页数量计算实际排名
+    const actualRank = start + i + 1
     const tr = document.createElement('tr')
     tr.innerHTML = `
-      <td>${item.rank || '-'}</td>
+      <td>${actualRank}</td>
       <td>${item.courseNo}</td>
       <td>${item.courseName || '未知'}</td>
       <td>${item.teacher || '未知'}</td>
@@ -958,19 +961,36 @@ async function renderCourses(list){
 async function selectCourse(studentNo, courseNo){
   if(!studentNo){ alert('请先输入学号'); return }
   try{
-    // 优先使用 selection-service (8081) 的选课接口
-    const res = await fetch(`${SELECTION_SERVICE_URL}/select`, {
-      method:'POST',
-      headers: {
-        ...getAuthHeaders(),
-        'X-Operator-Id': currentUser // 添加操作人ID
-      },
-      body: JSON.stringify({studentNo,courseNo}),
-    })
-    const result = await res.json()
-    // selection-service 返回格式: {success, code, message}
-    alert(result.message || (result.success ? '选课成功' : '选课失败'))
-    await fetchCourses()
+    // 判断是管理员操作还是学生操作
+    if(userRole === 'ADMIN'){
+      // 管理员使用专门的admin接口
+      const res = await fetch(`${SELECTION_SERVICE_URL}/admin/select`, {
+        method:'POST',
+        headers: {
+          ...getAuthHeaders(),
+          'X-Operator-Id': currentUser
+        },
+        body: JSON.stringify({studentNo,courseNo}),
+      })
+      const result = await res.json()
+      alert(result.message || (result.success ? '选课成功' : '选课失败'))
+      // 刷新退选课列表，更新按钮状态
+      await fetchCourseSelection()
+    }else{
+      // 学生使用普通选课接口
+      const res = await fetch(`${SELECTION_SERVICE_URL}/select`, {
+        method:'POST',
+        headers: {
+          ...getAuthHeaders(),
+          'X-Operator-Id': currentUser
+        },
+        body: JSON.stringify({studentNo,courseNo}),
+      })
+      const result = await res.json()
+      alert(result.message || (result.success ? '选课成功' : '选课失败'))
+      // 刷新退选课列表，更新按钮状态
+      await fetchCourseSelection()
+    }
   }catch(e){ 
     // 降级方案：如果 8081 不可用，使用 basic-service (8080)
     console.warn('selection-service 不可用，降级到 basic-service')
@@ -982,7 +1002,8 @@ async function selectCourse(studentNo, courseNo){
       })
       const result = await res.json()
       alert(result.message || (result.code===200 ? '成功' : '失败'))
-      await fetchCourses()
+      // 刷新退选课列表，更新按钮状态
+      await fetchCourseSelection()
     }catch(err){ 
       alert('选课失败：'+err) 
     }
@@ -992,19 +1013,36 @@ async function selectCourse(studentNo, courseNo){
 async function dropCourse(studentNo, courseNo){
   if(!studentNo){ alert('请先输入学号'); return }
   try{
-    // 优先使用 selection-service (8081) 的退课接口
-    const res = await fetch(`${SELECTION_SERVICE_URL}/drop`, {
-      method:'POST',
-      headers: {
-        ...getAuthHeaders(),
-        'X-Operator-Id': currentUser // 添加操作人ID
-      },
-      body: JSON.stringify({studentNo,courseNo}),
-    })
-    const result = await res.json()
-    // selection-service 返回格式: {success, code, message}
-    alert(result.message || (result.success ? '退课成功' : '退课失败'))
-    await fetchCourses()
+    // 判断是管理员操作还是学生操作
+    if(userRole === 'ADMIN'){
+      // 管理员使用专门的admin接口
+      const res = await fetch(`${SELECTION_SERVICE_URL}/admin/drop`, {
+        method:'POST',
+        headers: {
+          ...getAuthHeaders(),
+          'X-Operator-Id': currentUser
+        },
+        body: JSON.stringify({studentNo,courseNo}),
+      })
+      const result = await res.json()
+      alert(result.message || (result.success ? '退课成功' : '退课失败'))
+      // 刷新退选课列表，更新按钮状态
+      await fetchCourseSelection()
+    }else{
+      // 学生使用普通退课接口
+      const res = await fetch(`${SELECTION_SERVICE_URL}/drop`, {
+        method:'POST',
+        headers: {
+          ...getAuthHeaders(),
+          'X-Operator-Id': currentUser
+        },
+        body: JSON.stringify({studentNo,courseNo}),
+      })
+      const result = await res.json()
+      alert(result.message || (result.success ? '退课成功' : '退课失败'))
+      // 刷新退选课列表，更新按钮状态
+      await fetchCourseSelection()
+    }
   }catch(e){ 
     // 降级方案：如果 8081 不可用，使用 basic-service (8080)
     console.warn('selection-service 不可用，降级到 basic-service')
@@ -1016,7 +1054,8 @@ async function dropCourse(studentNo, courseNo){
       })
       const result = await res.json()
       alert(result.message || (result.code===200 ? '成功' : '失败'))
-      await fetchCourses()
+      // 刷新退选课列表，更新按钮状态
+      await fetchCourseSelection()
     }catch(err){ 
       alert('退课失败：'+err) 
     }
@@ -1454,6 +1493,12 @@ async function addCourse(){
     return
   }
   
+  // 前端校验：课程号必须由大写字母和数字组成，且首字母大写
+  if(!/^[A-Z][A-Z0-9]*$/.test(courseNo)){
+    alert('课程号格式不正确！\n\n要求：\n1. 必须以一个大写字母开头\n2. 后续字符只能是大写字母或数字\n3. 不允许小写字母、下划线或连字符\n\n示例：CS101、MATH202、A1')
+    return
+  }
+  
   try{
     const res = await fetch(API_COURSES, {
       method: 'POST',
@@ -1540,6 +1585,12 @@ async function deleteCourse(){
     return
   }
   
+  // 前端校验：课程号必须由大写字母和数字组成，且首字母大写
+  if(!/^[A-Z][A-Z0-9]*$/.test(courseNo)){
+    alert('课程号格式不正确！\n\n要求：\n1. 必须以一个大写字母开头\n2. 后续字符只能是大写字母或数字\n3. 不允许小写字母、下划线或连字符\n\n示例：CS101、MATH202、A1')
+    return
+  }
+  
   if(!confirm(`确定要删除课程 ${courseNo} 吗？`)) return
   
   try{
@@ -1595,6 +1646,12 @@ async function adminSearchCourse(){
   const courseNo = $('admin-search-course-no').value.trim()
   if(!courseNo){
     alert('请输入课程号')
+    return
+  }
+  
+  // 前端校验：课程号必须由大写字母和数字组成，且首字母大写
+  if(!/^[A-Z][A-Z0-9]*$/.test(courseNo)){
+    alert('课程号格式不正确！\n\n要求：\n1. 必须以一个大写字母开头\n2. 后续字符只能是大写字母或数字\n3. 不允许小写字母、下划线或连字符\n\n示例：CS101、MATH202、A1')
     return
   }
   
