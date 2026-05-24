@@ -67,11 +67,19 @@ goto show_menu
 
 :kill_all
 echo Killing all services...
+
+:: Kill by port (most reliable)
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :8080') do taskkill /PID %%a /F >nul 2>&1
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :8081') do taskkill /PID %%a /F >nul 2>&1
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :8082') do taskkill /PID %%a /F >nul 2>&1
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :8088') do taskkill /PID %%a /F >nul 2>&1
+
+:: Kill by window title
 taskkill /FI "WINDOWTITLE eq basic-service*" /F >nul 2>&1
 taskkill /FI "WINDOWTITLE eq selection-service*" /F >nul 2>&1
 taskkill /FI "WINDOWTITLE eq statistics-service*" /F >nul 2>&1
 taskkill /FI "WINDOWTITLE eq frontend*" /F >nul 2>&1
-taskkill /FI "WINDOWTITLE eq maven*" /F >nul 2>&1
+
 echo All services killed
 goto show_menu
 

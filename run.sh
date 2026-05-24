@@ -41,24 +41,28 @@ show_menu() {
 start_basic() {
     cd "$PROJECT_DIR/basic-service"
     nohup mvn spring-boot:run > ../logs/basic.log 2>&1 &
+    echo $! > ../logs/basic.pid
     echo "basic-service started (PID: $!)"
 }
 
 start_selection() {
     cd "$PROJECT_DIR/selection-service"
     nohup mvn spring-boot:run > ../logs/selection.log 2>&1 &
+    echo $! > ../logs/selection.pid
     echo "selection-service started (PID: $!)"
 }
 
 start_statistics() {
     cd "$PROJECT_DIR/statistics-service"
     nohup mvn spring-boot:run > ../logs/statistics.log 2>&1 &
+    echo $! > ../logs/statistics.pid
     echo "statistics-service started (PID: $!)"
 }
 
 start_frontend() {
     cd "$PROJECT_DIR/frontend"
     nohup python3 -m http.server 8088 > ../logs/frontend.log 2>&1 &
+    echo $! > ../logs/frontend.pid
     echo "frontend started (PID: $!)"
 }
 
@@ -120,15 +124,37 @@ start_all() {
 
 kill_all() {
     echo "Killing all services..."
-    pkill -f "basic-service" 2>/dev/null
-    pkill -f "selection-service" 2>/dev/null
-    pkill -f "statistics-service" 2>/dev/null
-    pkill -f "http.server 8088" 2>/dev/null
-    pkill -f "spring-boot:run" 2>/dev/null
-    pkill -f "spark-streaming" 2>/dev/null
-    pkill -f "spark-submit" 2>/dev/null
-    pkill -f "daily_stats.py" 2>/dev/null
-    pkill -f "course_stats.py" 2>/dev/null
+
+    # Kill by PID files if they exist
+    for pidfile in ../logs/*.pid; do
+        if [ -f "$pidfile" ]; then
+            pid=$(cat "$pidfile")
+            if kill -0 "$pid" 2>/dev/null; then
+                kill -9 "$pid" 2>/dev/null
+                echo "Killed PID $pid"
+            fi
+            rm -f "$pidfile"
+        fi
+    done
+
+    # Force kill by process patterns (including child java processes)
+    pkill -9 -f "spring-boot:run" 2>/dev/null
+    pkill -9 -f "spark-submit" 2>/dev/null
+    pkill -9 -f "python3.*http.server 8088" 2>/dev/null
+    pkill -9 -f "daily_stats.py" 2>/dev/null
+    pkill -9 -f "course_stats.py" 2>/dev/null
+
+    # Kill any remaining java processes running our services
+    pkill -9 -f "com.simon.basicservice" 2>/dev/null
+    pkill -9 -f "com.octopuz.selectionservice" 2>/dev/null
+    pkill -9 -f "com.octopuz.statisticsservice" 2>/dev/null
+
+    # Kill by port
+    fuser -k 8080/tcp 2>/dev/null
+    fuser -k 8081/tcp 2>/dev/null
+    fuser -k 8082/tcp 2>/dev/null
+    fuser -k 8088/tcp 2>/dev/null
+
     echo "All services killed"
 }
 
