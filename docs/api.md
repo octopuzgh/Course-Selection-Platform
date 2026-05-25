@@ -526,7 +526,7 @@ GET /api/offline/course/CS101
 {
     "courseNo": "CS101",
     "totalSelected": 80,
-    "totalRecords": 85,
+    "totalRecords": 84,
     "selectCount": 82,
     "dropCount": 2,
     "firstSelectTime": "2026-05-20 08:00:00",

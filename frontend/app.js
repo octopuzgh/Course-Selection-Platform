@@ -2393,7 +2393,7 @@ async function loadCourseRanking(page = 1){
         labels: pageNames,
         datasets: [{
           label: '累计选课次数',
-          data: pageData.map(item => item.totalSelected || 0),
+          data: pageData.map(item => item.selectCount || 0),
           backgroundColor: 'rgba(52, 152, 219, 0.7)',
           borderColor: 'rgba(52, 152, 219, 1)',
           borderWidth: 1
@@ -2524,7 +2524,9 @@ async function loadStatsSummary(){
     container.innerHTML = `
       <table class="students-table">
         <tbody>
-          <tr><td><strong>总选课次数</strong></td><td>${data.totalSelections || 0}</td></tr>
+          <tr><td><strong>总选课次数</strong></td><td>${data.totalSelectCount || 0}</td></tr>
+          <tr><td><strong>总退课次数</strong></td><td>${data.totalDropCount || 0}</td></tr>
+          <tr><td><strong>净选课次数</strong></td><td>${data.totalSelections || 0}</td></tr>
           <tr><td><strong>总统计天数</strong></td><td>${data.totalDays || 0}</td></tr>
           <tr><td><strong>参与学生数</strong></td><td>${data.totalStudents || 0}</td></tr>
         </tbody>
@@ -2571,7 +2573,8 @@ async function loadCourseHistory(){
         <tbody>
           <tr><td><strong>课程号</strong></td><td>${data.courseNo}</td></tr>
           <tr><td><strong>课程名称</strong></td><td>${courseName || '未知'}</td></tr>
-          <tr><td><strong>累计选课次数</strong></td><td>${data.totalSelected || 0}</td></tr>
+          <tr><td><strong>累计选课次数</strong></td><td>${data.selectCount || 0}</td></tr>
+          <tr><td><strong>净选课次数</strong></td><td>${data.totalSelected || 0}</td></tr>
           <tr><td><strong>累计退课次数</strong></td><td>${data.dropCount || 0}</td></tr>
           <tr><td><strong>累计记录数</strong></td><td>${data.totalRecords || 0}</td></tr>
           <tr><td><strong>排名</strong></td><td>${data.rank || '-'}</td></tr>

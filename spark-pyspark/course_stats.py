@@ -50,7 +50,7 @@ def main():
 
     course_stats = course_stats.withColumn(
         "total_selected",
-        col("select_students") - col("drop_students")
+        col("select_count") - col("drop_count")
     )
     course_stats = course_stats.withColumn(
         "total_records",
